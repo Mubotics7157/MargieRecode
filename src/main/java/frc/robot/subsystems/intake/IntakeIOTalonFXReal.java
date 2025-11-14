@@ -140,7 +140,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armCurrent = armCurrent.getValueAsDouble();
         
         // Sensor inputs
-        inputs.hasGamePiece = !beamBreak.get(); // Beam break is typically active low
+        inputs.hasGamePiece = inputs.rollerCurrent>50 ? true:false;//CHANGE LATER DEPENDING ON ACTUAL CURRENT READINGS
     }
     
     @Override
@@ -157,15 +157,11 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     public void resetArmPosition() {
         tryUntilOk(5, () -> armMotor.setPosition(0.0, 0.25));
     }
-    
+
+    //ADD METHODS FOR DEPLOYING AND STOWING THE INTAKE
     @Override
-    public void deployArm() {
-        deploySolenoid.set(DoubleSolenoid.Value.kForward);
-    }
-    
-    @Override
-    public void stowArm() {
-        deploySolenoid.set(DoubleSolenoid.Value.kReverse);
+    public void deployIntake(){
+        armMotor.setPosition();
     }
     
     @Override
