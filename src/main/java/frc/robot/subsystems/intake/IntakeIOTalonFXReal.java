@@ -3,7 +3,6 @@ package frc.robot.subsystems.intake;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -20,107 +19,132 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 public class IntakeIOTalonFXReal implements IntakeIO {
     // Hardware configuration constants
     private static final int ROLLER_MOTOR_ID = 20;
+    private static final int ARM_MOTOR_ID = 21;
     private static final double ROLLER_GEAR_RATIO = 3.0;
+    private static final double ARM_GEAR_RATIO = 100.0; // Example value
     
     // Hardware
     private final TalonFX rollerMotor;
-    private final TalonFX arm = new TalonFX(21, TunerConstants.DrivetrainConstants.CANBusName);
+    private final TalonFX armMotor;
     
     // Control requests
-    private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
     
-    // Status signals
+    // Status signals - Roller
+    private final StatusSignal<Angle> rollerPosition;
     private final StatusSignal<AngularVelocity> rollerVelocity;
     private final StatusSignal<Voltage> rollerAppliedVolts;
     private final StatusSignal<Current> rollerCurrent;
-    private final StatusSignal<Temperature> rollerTemp;
     
-    // Connection debouncer
-    private final Debouncer rollerConnectedDebounce = new Debouncer(0.5);
+    // Status signals - Arm
+    private final StatusSignal<Angle> armPosition;
+    private final StatusSignal<AngularVelocity> armVelocity;
+    private final StatusSignal<Voltage> armAppliedVolts;
+    private final StatusSignal<Current> armCurrent;
     
-    public IntakeIOTalonFX() {
-        // Initialize roller motor
+    public IntakeIOTalonFXReal() {
+        // Initialize hardware
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
+        armMotor = new TalonFX(ARM_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
         
         // Configure roller motor
-        var config = new TalonFXConfiguration();
-        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        var rollerConfig = new TalonFXConfiguration();
+        rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         
-        // Velocity PID configuration
-        config.Slot0.kP = 0.1;
-        config.Slot0.kI = 0.0;
-        config.Slot0.kD = 0.0;
-        config.Slot0.kV = 0.12;
+        // Current limits for roller
+        rollerConfig.CurrentLimits.StatorCurrentLimit = 40.0;
+        rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
+        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         
-        // Current limits
-        config.CurrentLimits.StatorCurrentLimit = 40.0;
-        config.CurrentLimits.StatorCurrentLimitEnable = true;
-        config.CurrentLimits.SupplyCurrentLimit = 30.0;
-        config.CurrentLimits.SupplyCurrentLimitEnable = true;
+        tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
         
-        tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(config, 0.25));
+        // Configure arm motor
+        var armConfig = new TalonFXConfiguration();
+        armConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        armConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         
-        // Create status signals
+        // Current limits for arm
+        armConfig.CurrentLimits.StatorCurrentLimit = 30.0;
+        armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        
+        // PID for arm position control
+        armConfig.Slot0.kP = 10.0;
+        armConfig.Slot0.kI = 0.0;
+        armConfig.Slot0.kD = 0.5;
+        
+        tryUntilOk(5, () -> armMotor.getConfigurator().apply(armConfig, 0.25));
+        
+        // Create status signals - Roller
+        rollerPosition = rollerMotor.getPosition();
         rollerVelocity = rollerMotor.getVelocity();
         rollerAppliedVolts = rollerMotor.getMotorVoltage();
-        rollerPosition = rollerMotor.getRollerPosition();
         rollerCurrent = rollerMotor.getStatorCurrent();
-        armVelocity = arm.getArmVelocity();
-        armCurrent = arm.getStatorCurrent();
-        armPosition = arm.getArmPosition();
-        armVoltage = arm.getMotorVoltage();
+        
+        // Create status signals - Arm
+        armPosition = armMotor.getPosition();
+        armVelocity = armMotor.getVelocity();
+        armAppliedVolts = armMotor.getMotorVoltage();
+        armCurrent = armMotor.getStatorCurrent();
         
         // Configure update frequencies
         BaseStatusSignal.setUpdateFrequencyForAll(
             50.0,
-            rollerVelocity, rollerAppliedVolts, rollerCurrent, rollerTemp
+            rollerPosition, rollerVelocity, rollerAppliedVolts, rollerCurrent,
+            armPosition, armVelocity, armAppliedVolts, armCurrent
         );
         rollerMotor.optimizeBusUtilization();
+        armMotor.optimizeBusUtilization();
     }
     
     @Override
     public void updateInputs(IntakeIOInputs inputs) {
-        var status = BaseStatusSignal.refreshAll(
-            rollerVelocity, rollerCurrent, rollerPosition, rollerAppliedVolts, armVelocity, armCurrent, armPosition, armVoltage
+        var rollerStatus = BaseStatusSignal.refreshAll(
+            rollerPosition, rollerVelocity, rollerAppliedVolts, rollerCurrent
+        );
+        var armStatus = BaseStatusSignal.refreshAll(
+            armPosition, armVelocity, armAppliedVolts, armCurrent
         );
         
-        inputs.rollerConnected = rollerConnectedDebounce.calculate(status.isOK());
-        inputs.rollerVelocityRPM = Units.radiansToRotations(
+        // Roller inputs
+        inputs.rollerPosition = Units.rotationsToRadians(
+            rollerPosition.getValueAsDouble()
+        ) / ROLLER_GEAR_RATIO;
+        inputs.rollerVelocity = Units.rotationsToRadians(
             rollerVelocity.getValueAsDouble()
-        ) * 60.0 / ROLLER_GEAR_RATIO;
-        inputs.rollerAppliedVolts = rollerAppliedVolts.getValueAsDouble();
-        inputs.rollerCurrentAmps = rollerCurrent.getValueAsDouble();
-        inputs.rollerTempCelsius = rollerTemp.getValueAsDouble();
+        ) / ROLLER_GEAR_RATIO;
+        inputs.rollerVoltage = rollerAppliedVolts.getValueAsDouble();
+        inputs.rollerCurrent = rollerCurrent.getValueAsDouble();
         
-        inputs.deployed = deploySolenoid.get() == DoubleSolenoid.Value.kForward;
-        inputs.hasGamePiece = !beamBreak.get();
+        // Arm inputs
+        inputs.armPosition = Units.rotationsToRadians(
+            armPosition.getValueAsDouble()
+        ) / ARM_GEAR_RATIO;
+        inputs.armVelocity = Units.rotationsToRadians(
+            armVelocity.getValueAsDouble()
+        ) / ARM_GEAR_RATIO;
+        inputs.armVoltage = armAppliedVolts.getValueAsDouble();
+        inputs.armCurrent = armCurrent.getValueAsDouble();
     }
     
     @Override
-    public void setRollerVelocity(double rpm) {
-        double rotPerSec = rpm / 60.0 * ROLLER_GEAR_RATIO;
-        rollerMotor.setControl(velocityRequest.withVelocity(rotPerSec));
+    public void setRollerVoltage(double voltage) {
+        rollerMotor.setControl(voltageRequest.withOutput(voltage));
     }
     
     @Override
-    public void setRollerVoltage(double volts) {
-        rollerMotor.setControl(voltageRequest.withOutput(volts));
+    public void setArmVoltage(double voltage) {
+        armMotor.setControl(voltageRequest.withOutput(voltage));
+    }
+    
+    @Override
+    public void resetArmPosition() {
+        tryUntilOk(5, () -> armMotor.setPosition(0.0, 0.25));
     }
     
     @Override
     public void stopRoller() {
         rollerMotor.stopMotor();
-    }
-    
-    @Override
-    public void deploy() {
-        deploySolenoid.set(DoubleSolenoid.Value.kForward);
-    }
-    
-    @Override
-    public void retract() {
-        deploySolenoid.set(DoubleSolenoid.Value.kReverse);
     }
 }
