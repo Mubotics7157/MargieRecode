@@ -1,0 +1,32 @@
+package frc.robot.subsystems.intake;
+import org.littletonrobotics.junction.AutoLog;
+public class IntakeIO {
+    public interface IntakeIOInterface {
+        @AutoLog
+        class IntakeIOInputs{
+            // Roller Motor
+            public double rollerCurrent = 0.0;
+            public double rollerVoltage = 0.0;
+            public double rollerPosition = 0.0;
+            public double rollerVelocity = 0.0;
+
+            // Arm Motor
+            public double armCurrent = 0.0;
+            public double armVoltage = 0.0;
+            public double armPosition = 0.0;
+            public double armVelocity = 0.0;
+
+            // Sensing
+            public boolean hasGamePiece = false;
+        }
+        void updateInputs(IntakeIOInterface.IntakeIOInputs inputs);
+
+        default void setRollerVoltage(double voltage) {};
+        default void setArmVoltage(double voltage) {};
+        default void resetArmPosition() {};
+        default void deployArm() {};
+        default void stowArm() {};
+        default void stopRoller() {};
+
+    }
+}
