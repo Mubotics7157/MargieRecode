@@ -7,7 +7,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -21,11 +20,18 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private static final int ROLLER_MOTOR_ID = 20;
     private static final int ARM_MOTOR_ID = 21;
     private static final double ROLLER_GEAR_RATIO = 3.0;
-    private static final double ARM_GEAR_RATIO = 100.0; // Example value
+    private static final double ARM_GEAR_RATIO = 100.0;
+    
+    // Pneumatics and sensor IDs
+    private static final int DEPLOY_SOLENOID_FORWARD = 0;
+    private static final int DEPLOY_SOLENOID_REVERSE = 1;
+    private static final int BEAM_BREAK_DIO = 0;
     
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
+    private final DoubleSolenoid deploySolenoid;
+    private final DigitalInput beamBreak;
     
     // Control requests
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
@@ -46,6 +52,12 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         // Initialize hardware
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
         armMotor = new TalonFX(ARM_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
+        deploySolenoid = new DoubleSolenoid(
+            PneumaticsModuleType.REVPH, 
+            DEPLOY_SOLENOID_FORWARD, 
+            DEPLOY_SOLENOID_REVERSE
+        );
+        beamBreak = new DigitalInput(BEAM_BREAK_DIO);
         
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
@@ -69,7 +81,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         armConfig.CurrentLimits.StatorCurrentLimit = 30.0;
         armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         
-        // PID for arm position control
+        // PID for arm position control (if needed)
         armConfig.Slot0.kP = 10.0;
         armConfig.Slot0.kI = 0.0;
         armConfig.Slot0.kD = 0.5;
@@ -126,6 +138,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         ) / ARM_GEAR_RATIO;
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
+        
+        // Sensor inputs
+        inputs.hasGamePiece = !beamBreak.get(); // Beam break is typically active low
     }
     
     @Override
@@ -141,6 +156,16 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     @Override
     public void resetArmPosition() {
         tryUntilOk(5, () -> armMotor.setPosition(0.0, 0.25));
+    }
+    
+    @Override
+    public void deployArm() {
+        deploySolenoid.set(DoubleSolenoid.Value.kForward);
+    }
+    
+    @Override
+    public void stowArm() {
+        deploySolenoid.set(DoubleSolenoid.Value.kReverse);
     }
     
     @Override
