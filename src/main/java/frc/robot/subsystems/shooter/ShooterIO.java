@@ -1,5 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-public class ModuleIO {
+public class ShooterIO {
     
 }

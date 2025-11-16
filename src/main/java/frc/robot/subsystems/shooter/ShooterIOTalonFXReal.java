@@ -1,5 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-public class ModuleIOTalonFXReal {
+public class ShooterIOTalonFXReal {
     
 }
