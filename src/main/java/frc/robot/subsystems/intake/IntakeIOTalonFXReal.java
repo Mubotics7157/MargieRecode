@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -10,8 +11,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import frc.robot.generated.TunerConstants;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
@@ -22,19 +21,17 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private static final double ROLLER_GEAR_RATIO = 3.0;
     private static final double ARM_GEAR_RATIO = 100.0;
     
-    // Pneumatics and sensor IDs
-    private static final int DEPLOY_SOLENOID_FORWARD = 0;
-    private static final int DEPLOY_SOLENOID_REVERSE = 1;
+    // Beam break sensor
     private static final int BEAM_BREAK_DIO = 0;
     
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
-    private final DoubleSolenoid deploySolenoid;
     private final DigitalInput beamBreak;
     
     // Control requests
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
+    private final PositionVoltage positionRequest = new PositionVoltage(0.0);
     
     // Status signals - Roller
     private final StatusSignal<Angle> rollerPosition;
@@ -52,11 +49,6 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         // Initialize hardware
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
         armMotor = new TalonFX(ARM_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
-        deploySolenoid = new DoubleSolenoid(
-            PneumaticsModuleType.REVPH, 
-            DEPLOY_SOLENOID_FORWARD, 
-            DEPLOY_SOLENOID_REVERSE
-        );
         beamBreak = new DigitalInput(BEAM_BREAK_DIO);
         
         // Configure roller motor
@@ -81,10 +73,12 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         armConfig.CurrentLimits.StatorCurrentLimit = 30.0;
         armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         
-        // PID for arm position control (if needed)
+        // PID for arm position control
         armConfig.Slot0.kP = 10.0;
         armConfig.Slot0.kI = 0.0;
         armConfig.Slot0.kD = 0.5;
+        armConfig.Slot0.kS = 0.0;
+        armConfig.Slot0.kV = 0.0;
         
         tryUntilOk(5, () -> armMotor.getConfigurator().apply(armConfig, 0.25));
         
@@ -112,10 +106,10 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     
     @Override
     public void updateInputs(IntakeIOInputs inputs) {
-        var rollerStatus = BaseStatusSignal.refreshAll(
+        BaseStatusSignal.refreshAll(
             rollerPosition, rollerVelocity, rollerAppliedVolts, rollerCurrent
         );
-        var armStatus = BaseStatusSignal.refreshAll(
+        BaseStatusSignal.refreshAll(
             armPosition, armVelocity, armAppliedVolts, armCurrent
         );
         
@@ -139,8 +133,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
         
-        // Sensor inputs
-        inputs.hasGamePiece = inputs.rollerCurrent>50 ? true:false;//CHANGE LATER DEPENDING ON ACTUAL CURRENT READINGS
+        // Sensor inputs - beam break is inverted (false = blocked)
+        inputs.hasGamePiece = !beamBreak.get();
     }
     
     @Override
@@ -154,14 +148,14 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     }
     
     @Override
+    public void setArmPosition(double positionRad) {
+        double motorRotations = Units.radiansToRotations(positionRad) * ARM_GEAR_RATIO;
+        armMotor.setControl(positionRequest.withPosition(motorRotations));
+    }
+    
+    @Override
     public void resetArmPosition() {
         tryUntilOk(5, () -> armMotor.setPosition(0.0, 0.25));
-    }
-
-    //ADD METHODS FOR DEPLOYING AND STOWING THE INTAKE
-    @Override
-    public void deployIntake(){
-        armMotor.setPosition();
     }
     
     @Override

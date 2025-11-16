@@ -27,11 +27,9 @@ public interface IntakeIO {
     
     default void setArmVoltage(double voltage) {}
     
+    default void setArmPosition(double positionRad) {}
+    
     default void resetArmPosition() {}
-    
-    default void deployArm() {}
-    
-    default void stowArm() {}
     
     default void stopRoller() {}
 }

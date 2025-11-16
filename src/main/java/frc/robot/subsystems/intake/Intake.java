@@ -4,6 +4,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
 public class Intake extends SubsystemBase {
+    // Arm position constants (radians)
+    public static final double ARM_STOWED_POSITION = 0.0;
+    public static final double ARM_DEPLOYED_POSITION = Math.PI / 2; // 90 degrees
+    
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
     
@@ -22,19 +26,24 @@ public class Intake extends SubsystemBase {
         io.setRollerVoltage(voltage);
     }
     
-    /** Set arm voltage (-12 to +12 volts) */
+    /** Set arm voltage (-12 to +12 volts) for manual control */
     public void setArmVoltage(double voltage) {
         io.setArmVoltage(voltage);
     }
     
-    /** Deploy the intake arm */
-    public void deployArm() {
-        io.deployArm();
+    /** Set arm to a specific position in radians */
+    public void setArmPosition(double positionRad) {
+        io.setArmPosition(positionRad);
     }
     
-    /** Stow the intake arm */
+    /** Deploy the intake arm to deployed position */
+    public void deployArm() {
+        io.setArmPosition(ARM_DEPLOYED_POSITION);
+    }
+    
+    /** Stow the intake arm to stowed position */
     public void stowArm() {
-        io.stowArm();
+        io.setArmPosition(ARM_STOWED_POSITION);
     }
     
     /** Reset arm encoder position to zero */
@@ -60,6 +69,16 @@ public class Intake extends SubsystemBase {
     /** Get arm position in radians */
     public double getArmPositionRad() {
         return inputs.armPosition;
+    }
+    
+    /** Get arm velocity in rad/s */
+    public double getArmVelocityRadPerSec() {
+        return inputs.armVelocity;
+    }
+    
+    /** Check if arm is at target position (within tolerance) */
+    public boolean isArmAtPosition(double targetRad, double toleranceRad) {
+        return Math.abs(inputs.armPosition - targetRad) < toleranceRad;
     }
     
     /** Stop all motors */
