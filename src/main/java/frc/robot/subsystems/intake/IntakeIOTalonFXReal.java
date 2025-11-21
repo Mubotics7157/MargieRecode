@@ -122,7 +122,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
         // Sensor inputs
-        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble() > 50.0;// Current limits, may need to change later
+        inputs.hasGamePiece =
+                rollerMotor.getStatorCurrent().getValueAsDouble() > 50.0; // Current limits, may need to change later
     }
 
     @Override

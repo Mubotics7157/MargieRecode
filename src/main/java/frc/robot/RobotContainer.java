@@ -50,8 +50,7 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final Intake intake;
-    private final Mechanism2d robotMechanism = new Mechanism2d(4, 4); //Intake visualization
-
+    private final Mechanism2d robotMechanism = new Mechanism2d(4, 4); // Intake visualization
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -136,13 +135,13 @@ public class RobotContainer {
         configureButtonBindings();
     }
 
-        private void setupRobotMechanism() {
-                // Robot base
-                MechanismRoot2d robotBase = robotMechanism.getRoot("RobotBase", 2, 0.2);
-                
-                // Drivetrain
-                robotBase.append(new MechanismLigament2d("Chassis", 0.8, 0, 10, new Color8Bit(Color.kBlue)));
-        }
+    private void setupRobotMechanism() {
+        // Robot base
+        MechanismRoot2d robotBase = robotMechanism.getRoot("RobotBase", 2, 0.2);
+
+        // Drivetrain
+        robotBase.append(new MechanismLigament2d("Chassis", 0.8, 0, 10, new Color8Bit(Color.kBlue)));
+    }
 
     /**
      * Use this method to define your button->command mappings. Buttons can be created by instantiating a
