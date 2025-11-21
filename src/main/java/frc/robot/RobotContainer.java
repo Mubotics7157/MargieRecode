@@ -14,13 +14,11 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
-import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,11 +28,10 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
-import frc.robot.subsystems.vision.*;
 import frc.robot.subsystems.intake.*;
+import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralOnFly;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -157,18 +154,18 @@ public class RobotContainer {
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        controller.rightBumper()
-        .whileTrue(Commands.startEnd(
-                () -> {
-                intake.deployArm();
-                intake.setRollerVoltage(8.0);
-                },
-                () -> {
-                intake.stowArm();
-                intake.stop();
-                },
-                intake
-        ));
+        controller
+                .rightBumper()
+                .whileTrue(Commands.startEnd(
+                        () -> {
+                            intake.deployArm();
+                            intake.setRollerVoltage(8.0);
+                        },
+                        () -> {
+                            intake.stowArm();
+                            intake.stop();
+                        },
+                        intake));
     }
 
     /**

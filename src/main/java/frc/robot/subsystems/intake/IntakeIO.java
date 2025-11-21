@@ -20,16 +20,16 @@ public interface IntakeIO {
         // Sensing
         public boolean hasGamePiece = false;
     }
-    
+
     default void updateInputs(IntakeIOInputs inputs) {}
-    
+
     default void setRollerVoltage(double voltage) {}
-    
+
     default void setArmVoltage(double voltage) {}
-    
+
     default void setArmPosition(double positionRad) {}
-    
+
     default void resetArmPosition() {}
-    
+
     default void stopRoller() {}
 }
