@@ -108,8 +108,8 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     public void stopRoller() {
         setRollerVoltage(0.0);
     }
-
-    /** For testing - manually set game piece detection */
+    
+    // For testing - manually set game piece detection 
     public void setSimulatedGamePiece(boolean hasGamePiece) {
         this.simulatedGamePiece = hasGamePiece;
     }

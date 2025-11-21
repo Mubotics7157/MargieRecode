@@ -20,68 +20,68 @@ public class Intake extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Intake", inputs);
     }
-
-    /** Set roller voltage (-12 to +12 volts) */
+    
+    //Set roller voltage (-12 to +12 volts)
     public void setRollerVoltage(double voltage) {
         io.setRollerVoltage(voltage);
     }
-
-    /** Set arm voltage (-12 to +12 volts) for manual control */
+    
+    //Set arm voltage (-12 to +12 volts) for manual control
     public void setArmVoltage(double voltage) {
         io.setArmVoltage(voltage);
     }
-
-    /** Set arm to a specific position in radians */
+    
+    //Set arm to a specific position in radians
     public void setArmPosition(double positionRad) {
         io.setArmPosition(positionRad);
     }
-
-    /** Deploy the intake arm to deployed position */
+    
+    // Deploy the intake arm to deployed position
     public void deployArm() {
         io.setArmPosition(ARM_DEPLOYED_POSITION);
     }
-
-    /** Stow the intake arm to stowed position */
+    
+    // Stow the intake arm to stowed position
     public void stowArm() {
         io.setArmPosition(ARM_STOWED_POSITION);
     }
-
-    /** Reset arm encoder position to zero */
+    
+    // Reset arm encoder position to zero 
     public void resetArmPosition() {
         io.resetArmPosition();
     }
-
-    /** Check if a game piece is detected */
+    
+    // Check if a game piece is detected
     public boolean hasGamePiece() {
         return inputs.hasGamePiece;
     }
-
-    /** Get roller position in radians */
+    
+    // Get roller position in radians
     public double getRollerPositionRad() {
         return inputs.rollerPosition;
     }
-
-    /** Get roller velocity in rad/s */
+    
+    //Get roller velocity in rad/s
     public double getRollerVelocityRadPerSec() {
         return inputs.rollerVelocity;
     }
-
-    /** Get arm position in radians */
+    
+    // Get arm position in radians
     public double getArmPositionRad() {
         return inputs.armPosition;
     }
-
-    /** Get arm velocity in rad/s */
+    
+    // Get arm velocity in rad/s
     public double getArmVelocityRadPerSec() {
         return inputs.armVelocity;
     }
-
-    /** Check if arm is at target position (within tolerance) */
+    
+    // Check if arm is at target position (within tolerance)
     public boolean isArmAtPosition(double targetRad, double toleranceRad) {
         return Math.abs(inputs.armPosition - targetRad) < toleranceRad;
     }
-
-    /** Stop all motors */
+    
+    // Stop all motors
     public void stop() {
         io.stopRoller();
         io.setArmVoltage(0.0);
