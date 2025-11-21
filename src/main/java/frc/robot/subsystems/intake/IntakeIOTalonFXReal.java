@@ -12,7 +12,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
-import edu.wpi.first.wpilibj.DigitalInput;
 import frc.robot.generated.TunerConstants;
 
 public class IntakeIOTalonFXReal implements IntakeIO {
@@ -22,13 +21,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private static final double ROLLER_GEAR_RATIO = 3.0;
     private static final double ARM_GEAR_RATIO = 100.0;
 
-    // Beam break sensor
-    private static final int BEAM_BREAK_DIO = 0;
-
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
-    private final DigitalInput beamBreak;
 
     // Control requests
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
@@ -50,7 +45,6 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         // Initialize hardware
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
         armMotor = new TalonFX(ARM_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
-        beamBreak = new DigitalInput(BEAM_BREAK_DIO);
 
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
@@ -127,8 +121,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
-        // Sensor inputs - beam break is inverted (false = blocked)
-        inputs.hasGamePiece = !beamBreak.get();
+        // Sensor inputs
+        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble() > 50.0;// Current limits, may need to change later
     }
 
     @Override

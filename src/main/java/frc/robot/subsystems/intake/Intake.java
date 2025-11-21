@@ -1,5 +1,18 @@
 package frc.robot.subsystems.intake;
 
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
@@ -11,14 +24,58 @@ public class Intake extends SubsystemBase {
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
+    // Mechanism2d for visualization
+    private final Mechanism2d mechanism;
+    private final MechanismLigament2d armLigament;
+    private final MechanismLigament2d rollerLigament;
+
+
     public Intake(IntakeIO io) {
         this.io = io;
+
+        // Create Mechanism2d (width, height in meters)
+        mechanism = new Mechanism2d(3, 3);
+        
+        // Create root at robot center (x, y in meters)
+        MechanismRoot2d root = mechanism.getRoot("IntakeRoot", 1.5, 0.5);
+        
+        // Create arm ligament (name, length in meters, angle in degrees, line width, color)
+        armLigament = root.append(new MechanismLigament2d(
+            "Arm", 
+            0.5,  // 0.5 meter arm length
+            Math.toDegrees(ARM_STOWED_POSITION), 
+            6, 
+            new Color8Bit(Color.kOrange)
+        ));
+        
+        // Create roller at end of arm
+        rollerLigament = armLigament.append(new MechanismLigament2d(
+            "Roller",
+            0.15,  // 0.15 meter roller visualization
+            90,    // Perpendicular to arm
+            4,
+            new Color8Bit(Color.kGreen)
+        ));
+
+        SmartDashboard.putData("Intake/Mechanism", mechanism);
+
     }
 
     @Override
     public void periodic() {
         io.updateInputs(inputs);
         Logger.processInputs("Intake", inputs);
+
+        // Update mechanism visualization
+        armLigament.setAngle(Math.toDegrees(inputs.armPosition));
+        
+        // Change roller color based on game piece detection
+        if (inputs.hasGamePiece) {
+            rollerLigament.setColor(new Color8Bit(Color.kYellow));
+        } 
+        else {
+            rollerLigament.setColor(new Color8Bit(Color.kGreen));
+        }
     }
     
     //Set roller voltage (-12 to +12 volts)
