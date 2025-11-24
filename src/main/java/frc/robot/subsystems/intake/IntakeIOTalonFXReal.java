@@ -52,9 +52,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // Current limits for roller
-        rollerConfig.CurrentLimits.StatorCurrentLimit = 40.0;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        rollerConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = 50.0;
         rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
@@ -122,8 +122,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
         // Sensor inputs
-        inputs.hasGamePiece =
-                rollerMotor.getStatorCurrent().getValueAsDouble() > 50.0; // Current limits, may need to change later
+        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble() > 40.0; //May need to change current limit and detection later
     }
 
     @Override
