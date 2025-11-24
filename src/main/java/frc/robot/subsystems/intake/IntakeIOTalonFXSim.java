@@ -66,11 +66,14 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         inputs.armVoltage = armAppliedVolts;
         inputs.armCurrent = armSim.getCurrentDrawAmps();
 
-        // Simulate game piece detection based on roller speed
-        // If roller is spinning fast enough, assume we have a game piece
-        if (Math.abs(inputs.rollerVelocity) > 5.0) { // rad/s threshold
+        if (!simulatedGamePiece && rollerAppliedVolts > 6.0 && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
             simulatedGamePiece = true;
         }
+        
+        if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
+            simulatedGamePiece = false;
+        }
+    
         inputs.hasGamePiece = simulatedGamePiece;
     }
 
