@@ -180,23 +180,23 @@ public class RobotContainer {
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
-        // Intake (no timeout)
-        controller.a().onTrue(SuperstructureCommands.intake(superstructure));
+        // Intake (with timeout)
+        controller.leftBumper().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure,3.0));
 
         // Eject for 0.5 seconds
-        controller.b().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));
+        controller.rightBumper().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));
 
         // Stow (AKA Return to Idle)
-        controller.x().onTrue(SuperstructureCommands.stow(superstructure));
+        controller.a().onTrue(SuperstructureCommands.stow(superstructure));
 
         // Emergency stop
         controller.y().onTrue(SuperstructureCommands.emergencyStop(superstructure));
 
         // Prepare to shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
-        controller.povLeft().onTrue(SuperstructureCommands.prepareToShoot(superstructure));
+        controller.x().onTrue(SuperstructureCommands.prepareToShoot(superstructure));
 
         // Shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
-        controller.povRight().onTrue(SuperstructureCommands.shoot(superstructure));
+        controller.b().onTrue(SuperstructureCommands.shoot(superstructure));
 
         // ============OPERATOR CONTROLLER BINDINGS (SYSTEM)============//
         // Manual intake
@@ -205,8 +205,8 @@ public class RobotContainer {
         // Manual eject
         operator.b().whileTrue(SuperstructureCommands.manualOuttake(superstructure));
 
-        // Intake (with Timeout)
-        operator.x().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure, 3.0));
+        // Intake (without timeout)
+        operator.x().onTrue(SuperstructureCommands.intake(superstructure));
     }
 
     /**
