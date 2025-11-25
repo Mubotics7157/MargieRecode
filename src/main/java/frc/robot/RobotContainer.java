@@ -31,9 +31,13 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.SuperstructureCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
+import frc.robot.subsystems.superstructure.Superstructure;
+import frc.robot.subsystems.superstructure.SuperstructureIO;
+import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -50,12 +54,14 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final Intake intake;
+    private final Superstructure superstructure;
     private final Mechanism2d robotMechanism = new Mechanism2d(4, 4); // Intake visualization
 
     private SwerveDriveSimulation driveSimulation = null;
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
+    private final CommandXboxController operator = new CommandXboxController(1);
 
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
@@ -77,6 +83,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
+                superstructure = new Superstructure(intake, new SuperstructureIOReal());
                 break;
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
@@ -102,6 +109,7 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
                 setupRobotMechanism();
+                superstructure = new Superstructure(intake, new SuperstructureIOReal());
                 break;
 
             default:
@@ -115,6 +123,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
+                superstructure = new Superstructure(intake, new SuperstructureIOReal());
                 break;
         }
 
@@ -149,18 +158,19 @@ public class RobotContainer {
      * and then passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
+        //============DRIVER CONTROLLER BINDINGS (DRIVE)============//
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> -controller.getRightX()));
 
         // Lock to 0° when A button is held
         controller
-                .a()
+                .povDown()
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
                         drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
 
         // Switch to X pattern when X button is pressed
-        controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        controller.povUp().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -169,18 +179,36 @@ public class RobotContainer {
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        controller
-                .rightBumper()
-                .whileTrue(Commands.startEnd(
-                        () -> {
-                            intake.deployArm();
-                            intake.setRollerVoltage(8.0);
-                        },
-                        () -> {
-                            intake.stowArm();
-                            intake.stop();
-                        },
-                        intake));
+
+        //============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
+        //Intake (no timeout)
+        controller.a().onTrue(SuperstructureCommands.intake(superstructure));
+
+        //Eject for 0.5 seconds
+        controller.b().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));
+
+        //Stow (AKA Return to Idle)
+        controller.x().onTrue(SuperstructureCommands.stow(superstructure));
+
+        //Emergency stop
+        controller.y().onTrue(SuperstructureCommands.emergencyStop(superstructure));
+
+        //Prepare to shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
+        controller.povLeft().onTrue(SuperstructureCommands.prepareToShoot(superstructure));
+
+        //Shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
+        controller.povRight().onTrue(SuperstructureCommands.shoot(superstructure));
+
+
+        //============OPERATOR CONTROLLER BINDINGS (SYSTEM)============//
+        //Manual intake
+        operator.a().whileTrue(SuperstructureCommands.manualIntake(superstructure));
+
+        //Manual eject
+        operator.b().whileTrue(SuperstructureCommands.manualOuttake(superstructure));
+
+        //Intake (with Timeout)
+        operator.x().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure, 3.0));
     }
 
     /**
