@@ -66,11 +66,6 @@ public class Superstructure extends SubsystemBase {
             transitionToIdle();
         }
 
-        if (currentState == desiredState) {
-            runActiveStateLogic();
-            return;
-        }
-
         switch (currentState) {
             case IDLE:
                 handleIdleState();
@@ -96,22 +91,6 @@ public class Superstructure extends SubsystemBase {
             case PREPARING_TO_SHOOT:
             case SHOOTING:
                 transitionToIdle();
-                break;
-        }
-    }
-
-    private void runActiveStateLogic() {
-        switch (currentState) {
-            case INTAKING:
-                intake.setRollerVoltage(8.0);
-                break;
-            case OUTTAKING:
-                intake.setRollerVoltage(-8.0);
-                break;
-            case HOLDING_PIECE:
-                intake.stop();
-                break;
-            default:
                 break;
         }
     }
@@ -144,8 +123,7 @@ public class Superstructure extends SubsystemBase {
             changeState(Superstructurestate.TRANSITIONING);
             desiredState = Superstructurestate.HOLDING_PIECE;
         }
-
-        if (desiredState != Superstructurestate.INTAKING && desiredState != Superstructurestate.HOLDING_PIECE) {
+        else if (desiredState != Superstructurestate.INTAKING && desiredState != Superstructurestate.HOLDING_PIECE) {
             intake.stop();
             intake.stowArm();
             changeState(Superstructurestate.TRANSITIONING);
@@ -256,11 +234,13 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void requestShoot() {
-        if (currentState == Superstructurestate.PREPARING_TO_SHOOT) desiredState = Superstructurestate.SHOOTING;
+        if (currentState == Superstructurestate.PREPARING_TO_SHOOT)
+            desiredState = Superstructurestate.SHOOTING;
     }
 
     public void requestShootPrepare() {
-        if (currentState == Superstructurestate.HOLDING_PIECE) desiredState = Superstructurestate.PREPARING_TO_SHOOT;
+        if (currentState == Superstructurestate.HOLDING_PIECE) 
+            desiredState = Superstructurestate.PREPARING_TO_SHOOT;
     }
 
     public Superstructurestate getCurrentState() {
