@@ -66,14 +66,16 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         inputs.armVoltage = armAppliedVolts;
         inputs.armCurrent = armSim.getCurrentDrawAmps();
 
-        if (!simulatedGamePiece && rollerAppliedVolts > 6.0 && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
+        if (!simulatedGamePiece
+                && rollerAppliedVolts > 6.0
+                && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
             simulatedGamePiece = true;
         }
-        
+
         if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
             simulatedGamePiece = false;
         }
-    
+
         inputs.hasGamePiece = simulatedGamePiece;
     }
 

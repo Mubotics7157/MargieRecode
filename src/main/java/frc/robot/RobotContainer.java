@@ -36,7 +36,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
 import frc.robot.subsystems.superstructure.Superstructure;
-import frc.robot.subsystems.superstructure.SuperstructureIO;
 import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
@@ -158,7 +157,7 @@ public class RobotContainer {
      * and then passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-        //============DRIVER CONTROLLER BINDINGS (DRIVE)============//
+        // ============DRIVER CONTROLLER BINDINGS (DRIVE)============//
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> -controller.getRightX()));
@@ -180,34 +179,33 @@ public class RobotContainer {
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-        //============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
-        //Intake (no timeout)
+        // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
+        // Intake (no timeout)
         controller.a().onTrue(SuperstructureCommands.intake(superstructure));
 
-        //Eject for 0.5 seconds
+        // Eject for 0.5 seconds
         controller.b().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));
 
-        //Stow (AKA Return to Idle)
+        // Stow (AKA Return to Idle)
         controller.x().onTrue(SuperstructureCommands.stow(superstructure));
 
-        //Emergency stop
+        // Emergency stop
         controller.y().onTrue(SuperstructureCommands.emergencyStop(superstructure));
 
-        //Prepare to shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
+        // Prepare to shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
         controller.povLeft().onTrue(SuperstructureCommands.prepareToShoot(superstructure));
 
-        //Shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
+        // Shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
         controller.povRight().onTrue(SuperstructureCommands.shoot(superstructure));
 
-
-        //============OPERATOR CONTROLLER BINDINGS (SYSTEM)============//
-        //Manual intake
+        // ============OPERATOR CONTROLLER BINDINGS (SYSTEM)============//
+        // Manual intake
         operator.a().whileTrue(SuperstructureCommands.manualIntake(superstructure));
 
-        //Manual eject
+        // Manual eject
         operator.b().whileTrue(SuperstructureCommands.manualOuttake(superstructure));
 
-        //Intake (with Timeout)
+        // Intake (with Timeout)
         operator.x().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure, 3.0));
     }
 

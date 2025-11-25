@@ -17,7 +17,7 @@ import frc.robot.generated.TunerConstants;
 public class IntakeIOTalonFXReal implements IntakeIO {
     // Hardware configuration constants
     private static final int ROLLER_MOTOR_ID = 20;
-    private static final int ARM_MOTOR_ID = 21;
+    private static final int ARM_MOTOR_ID = 19;
     private static final double ROLLER_GEAR_RATIO = 3.0;
     private static final double ARM_GEAR_RATIO = 100.0;
 
@@ -122,7 +122,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
         // Sensor inputs
-        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble() > 40.0; //May need to change current limit and detection later
+        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble()
+                > 40.0; // May need to change current limit and detection later
     }
 
     @Override
