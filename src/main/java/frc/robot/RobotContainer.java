@@ -162,14 +162,14 @@ public class RobotContainer {
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> -controller.getRightX()));
 
-        // Lock to 0° when A button is held
-        controller
-                .povDown()
-                .whileTrue(DriveCommands.joystickDriveAtAngle(
-                        drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
+        // // Lock to 0° when A button is held
+        // controller
+        //         .povDown()
+        //         .whileTrue(DriveCommands.joystickDriveAtAngle(
+        //                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
 
-        // Switch to X pattern when X button is pressed
-        controller.povUp().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        // // Switch to X pattern when X button is pressed
+        // controller.povUp().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -180,33 +180,17 @@ public class RobotContainer {
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
-        // Intake (with timeout)
-        controller.leftBumper().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure, 3.0));
+        // Intake
+        controller.leftBumper().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
 
         // Eject for 0.5 seconds
-        controller.rightBumper().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));
+        controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
 
         // Stow (AKA Return to Idle)
-        controller.a().onTrue(SuperstructureCommands.stow(superstructure));
+        controller.a().onTrue(SuperstructureCommands.returnToIdle(superstructure)); // a
 
         // Emergency stop
         controller.y().onTrue(SuperstructureCommands.emergencyStop(superstructure));
-
-        // Prepare to shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
-        controller.x().onTrue(SuperstructureCommands.prepareToShoot(superstructure));
-
-        // Shoot (WONT DO ANYTHING UNTIL SHOOTER IMPLEMENTED)
-        controller.b().onTrue(SuperstructureCommands.shoot(superstructure));
-
-        // ============OPERATOR CONTROLLER BINDINGS (SYSTEM)============//
-        // Manual intake
-        operator.a().whileTrue(SuperstructureCommands.manualIntake(superstructure));
-
-        // Manual eject
-        operator.b().whileTrue(SuperstructureCommands.manualOuttake(superstructure));
-
-        // Intake (without timeout)
-        operator.x().onTrue(SuperstructureCommands.intake(superstructure));
     }
 
     /**
