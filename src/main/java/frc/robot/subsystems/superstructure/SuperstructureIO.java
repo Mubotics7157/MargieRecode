@@ -10,17 +10,12 @@ public interface SuperstructureIO {
         public double stateStartTime = 0.0;
 
         // Intake Status
-        public boolean intakeHasGamePiece = false;
         public boolean intakeDeployed = false;
         public double intakeArmPosition = 0.0;
 
         // Shooter status stuff, may need to be changed later when actually implemented
         public boolean shooterAtSpeed = false;
         public double shooterVelocity = 0.0;
-
-        // Ready status
-        public boolean readyToIntake = true;
-        public boolean readyToShoot = false;
     }
 
     default void updateInputs(SuperstructureIOInputs inputs) {}

@@ -51,12 +51,8 @@ public class Superstructure extends SubsystemBase {
         inputs.stateStartTime = stateStartTime;
 
         // Intake status
-        inputs.intakeHasGamePiece = intake.hasGamePiece();
         inputs.intakeDeployed = intake.isArmAtPosition(Intake.ARM_DEPLOYED_POSITION, ArmPositionTolerance);
         inputs.intakeArmPosition = intake.getArmPositionRad();
-
-        inputs.readyToIntake = true; // intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, ArmPositionTolerance);
-        inputs.readyToShoot = false; // Placeholder for shooter
     }
 
     // Run state machine logic
@@ -76,9 +72,6 @@ public class Superstructure extends SubsystemBase {
             case STOWED:
                 handleStowedState();
                 break;
-            case HOLDING_PIECE:
-                handleHoldingPieceState();
-                break;
             case OUTTAKING:
                 handleOuttakingState();
                 break;
@@ -96,7 +89,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void handleIdleState() {
-
         switch (desiredState) {
             case INTAKING:
                 intake.deployArm();
@@ -107,7 +99,9 @@ public class Superstructure extends SubsystemBase {
                 changeState(Superstructurestate.TRANSITIONING);
                 break;
             default:
-                // Stay in idle
+                if (intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, ArmPositionTolerance)) {
+                    intake.stopArm(); // Stop arm if at stowed position
+                }
                 break;
         }
     }
@@ -115,22 +109,23 @@ public class Superstructure extends SubsystemBase {
     private void handleIntakingState() {
         intake.setRollerVoltage(0.8);
         intake.setArmPosition(Intake.ARM_DEPLOYED_POSITION);
+        if(desiredState != Superstructurestate.INTAKING) {
+            intake.stop();
+            intake.stowArm();
+            changeState(Superstructurestate.TRANSITIONING);
+        }
     }
 
     private void handleTransitioningState() {
         switch (desiredState) {
             case INTAKING:
-                if (inputs.readyToIntake) {
-                    intake.setRollerVoltage(0.5);
-                    changeState(Superstructurestate.INTAKING);
-                }
+                intake.setRollerVoltage(0.5);
+                changeState(Superstructurestate.INTAKING);
                 break;
 
             case OUTTAKING:
-                if (inputs.readyToIntake) {
-                    intake.setRollerVoltage(-0.5);
-                    changeState(Superstructurestate.OUTTAKING);
-                }
+                intake.setRollerVoltage(-0.5);
+                changeState(Superstructurestate.OUTTAKING);
                 break;
 
             case IDLE:
@@ -138,34 +133,10 @@ public class Superstructure extends SubsystemBase {
                 changeState(Superstructurestate.IDLE);
                 break;
 
-            case HOLDING_PIECE:
-                // Wait for arm to stow
-                if (intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, ArmPositionTolerance)) {
-                    intake.stop();
-                    changeState(Superstructurestate.HOLDING_PIECE);
-                }
-                break;
-
             default:
                 // Go to idle if unsure
                 transitionToIdle();
                 break;
-        }
-    }
-
-    private void handleHoldingPieceState() {
-        intake.stowArm();
-        intake.stop();
-
-        // Check for any state changes
-        if (desiredState == Superstructurestate.OUTTAKING) {
-            intake.deployArm();
-            changeState(Superstructurestate.TRANSITIONING);
-        } else if (desiredState == Superstructurestate.INTAKING) {
-            intake.deployArm();
-            changeState(Superstructurestate.TRANSITIONING);
-        } else if (desiredState == Superstructurestate.IDLE) {
-            changeState(Superstructurestate.IDLE);
         }
     }
 
@@ -221,10 +192,6 @@ public class Superstructure extends SubsystemBase {
         if (currentState == Superstructurestate.PREPARING_TO_SHOOT) desiredState = Superstructurestate.SHOOTING;
     }
 
-    public void requestShootPrepare() {
-        if (currentState == Superstructurestate.HOLDING_PIECE) desiredState = Superstructurestate.PREPARING_TO_SHOOT;
-    }
-
     public Superstructurestate getCurrentState() {
         return currentState;
     }
@@ -235,10 +202,6 @@ public class Superstructure extends SubsystemBase {
 
     public boolean isReady() {
         return currentState == desiredState;
-    }
-
-    public boolean hasGamePiece() {
-        return inputs.intakeHasGamePiece || currentState.hasGamePiece();
     }
 
     public void emergencyStop() {
