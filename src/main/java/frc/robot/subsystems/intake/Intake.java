@@ -57,13 +57,7 @@ public class Intake extends SubsystemBase {
 
         // Update mechanism visualization
         armLigament.setAngle(Math.toDegrees(inputs.armPosition));
-
-        // Change roller color based on game piece detection
-        if (inputs.hasGamePiece) {
-            rollerLigament.setColor(new Color8Bit(Color.kYellow));
-        } else {
-            rollerLigament.setColor(new Color8Bit(Color.kGreen));
-        }
+        rollerLigament.setColor(new Color8Bit(Color.kGreen));
     }
 
     // Set roller voltage (-12 to +12 volts)
@@ -96,11 +90,6 @@ public class Intake extends SubsystemBase {
         io.resetArmPosition();
     }
 
-    // Check if a game piece is detected
-    public boolean hasGamePiece() {
-        return inputs.hasGamePiece;
-    }
-
     // Get roller position in radians
     public double getRollerPositionRad() {
         return inputs.rollerPosition;
@@ -131,8 +120,8 @@ public class Intake extends SubsystemBase {
         io.stopRoller();
     }
 
-    //Stop arm
-    public void stopArm(){
+    // Stop arm
+    public void stopArm() {
         io.stopArmMotor();
     }
 }

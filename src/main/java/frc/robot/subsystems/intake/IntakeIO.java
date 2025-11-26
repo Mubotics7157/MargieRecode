@@ -16,9 +16,6 @@ public interface IntakeIO {
         public double armVoltage = 0.0;
         public double armPosition = 0.0;
         public double armVelocity = 0.0;
-
-        // Sensing
-        public boolean hasGamePiece = false;
     }
 
     default void updateInputs(IntakeIOInputs inputs) {}
@@ -33,5 +30,5 @@ public interface IntakeIO {
 
     default void stopRoller() {}
 
-    default void stopArmMotor(){}
+    default void stopArmMotor() {}
 }
