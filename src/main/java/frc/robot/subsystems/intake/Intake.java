@@ -12,7 +12,7 @@ import org.littletonrobotics.junction.Logger;
 public class Intake extends SubsystemBase {
     // Arm position constants (radians)
     public static final double ARM_STOWED_POSITION = 0.0;
-    public static final double ARM_DEPLOYED_POSITION = Math.PI / 2; // 90 degrees
+    public static final double ARM_DEPLOYED_POSITION = -1.62;
 
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
@@ -129,6 +129,10 @@ public class Intake extends SubsystemBase {
     // Stop all motors
     public void stop() {
         io.stopRoller();
-        io.setArmVoltage(0.0);
+    }
+
+    //Stop arm
+    public void stopArm(){
+        io.stopArmMotor();
     }
 }

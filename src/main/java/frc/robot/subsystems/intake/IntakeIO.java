@@ -32,4 +32,6 @@ public interface IntakeIO {
     default void resetArmPosition() {}
 
     default void stopRoller() {}
+
+    default void stopArmMotor(){}
 }
