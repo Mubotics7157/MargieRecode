@@ -19,7 +19,7 @@ public interface SuperstructureIO {
         public double shooterVelocity = 0.0;
 
         // Ready status
-        public boolean readyToIntake = false;
+        public boolean readyToIntake = true;
         public boolean readyToShoot = false;
     }
 

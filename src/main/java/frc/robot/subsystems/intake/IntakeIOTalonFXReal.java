@@ -5,29 +5,29 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.MotionMagicExpoTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
-import frc.robot.generated.TunerConstants;
 
 public class IntakeIOTalonFXReal implements IntakeIO {
     // Hardware configuration constants
     private static final int ROLLER_MOTOR_ID = 20;
     private static final int ARM_MOTOR_ID = 19;
+    private static final int INDEXER_MOTOR_ID = 17;
     private static final double ROLLER_GEAR_RATIO = 3.0;
-    private static final double ARM_GEAR_RATIO = 100.0;
-
+    private static final double ARM_GEAR_RATIO = 1; // 248/9
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
+    private final TalonFX indexerMotor;
 
     // Control requests
-    private final VoltageOut voltageRequest = new VoltageOut(0.0);
-    private final PositionVoltage positionRequest = new PositionVoltage(0.0);
+    private final DutyCycleOut voltageRequest = new DutyCycleOut(0.0);
+    private final MotionMagicExpoTorqueCurrentFOC positionRequest = new MotionMagicExpoTorqueCurrentFOC(0.0);
 
     // Status signals - Roller
     private final StatusSignal<Angle> rollerPosition;
@@ -41,15 +41,21 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private final StatusSignal<Voltage> armAppliedVolts;
     private final StatusSignal<Current> armCurrent;
 
+    // Status Signals - Indexer
+    private final StatusSignal<AngularVelocity> indexerVelocity;
+    private final StatusSignal<Voltage> indexerAppliedVolts;
+    private final StatusSignal<Current> indexerCurrent;
+
     public IntakeIOTalonFXReal() {
         // Initialize hardware
-        rollerMotor = new TalonFX(ROLLER_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
-        armMotor = new TalonFX(ARM_MOTOR_ID, TunerConstants.DrivetrainConstants.CANBusName);
+        rollerMotor = new TalonFX(ROLLER_MOTOR_ID, "rio"); // CHANGE TO SWERVE LATER
+        armMotor = new TalonFX(ARM_MOTOR_ID, "rio"); // CHANGE TO SWERVE LATER
+        indexerMotor = new TalonFX(INDEXER_MOTOR_ID, "rio"); // CHANGE LATER TO SWERVE
 
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         // Current limits for roller
         rollerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
@@ -58,6 +64,19 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
+
+        // Configure indexer motor
+        var indexerConfig = new TalonFXConfiguration();
+        indexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        indexerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+
+        // Current limits for roller
+        indexerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
+        indexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        indexerConfig.CurrentLimits.SupplyCurrentLimit = 50.0;
+        indexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+
+        tryUntilOk(5, () -> indexerMotor.getConfigurator().apply(indexerConfig, 0.25));
 
         // Configure arm motor
         var armConfig = new TalonFXConfiguration();
@@ -69,7 +88,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         // PID for arm position control
-        armConfig.Slot0.kP = 10.0;
+        armConfig.Slot0.kP = 100.0;
         armConfig.Slot0.kI = 0.0;
         armConfig.Slot0.kD = 0.5;
         armConfig.Slot0.kS = 0.0;
@@ -82,6 +101,11 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerVelocity = rollerMotor.getVelocity();
         rollerAppliedVolts = rollerMotor.getMotorVoltage();
         rollerCurrent = rollerMotor.getStatorCurrent();
+
+        // Create status signals - Indexer
+        indexerVelocity = indexerMotor.getVelocity();
+        indexerAppliedVolts = indexerMotor.getMotorVoltage();
+        indexerCurrent = indexerMotor.getStatorCurrent();
 
         // Create status signals - Arm
         armPosition = armMotor.getPosition();
@@ -102,6 +126,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
                 armCurrent);
         rollerMotor.optimizeBusUtilization();
         armMotor.optimizeBusUtilization();
+        indexerMotor.optimizeBusUtilization();
     }
 
     @Override
@@ -123,12 +148,13 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
         // Sensor inputs
         inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble()
-                > 40.0; // May need to change current limit and detection later
+                > 100.0; // May need to change current limit and detection later
     }
 
     @Override
     public void setRollerVoltage(double voltage) {
         rollerMotor.setControl(voltageRequest.withOutput(voltage));
+        indexerMotor.setControl(voltageRequest.withOutput(voltage));
     }
 
     @Override
@@ -150,5 +176,10 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     @Override
     public void stopRoller() {
         rollerMotor.stopMotor();
+        indexerMotor.stopMotor();
+    }
+
+    public void stopArmMotor(){
+        armMotor.stopMotor();
     }
 }
