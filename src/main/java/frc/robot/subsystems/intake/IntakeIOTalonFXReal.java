@@ -20,6 +20,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private static final int INDEXER_MOTOR_ID = 17;
     private static final double ROLLER_GEAR_RATIO = 3.0;
     private static final double ARM_GEAR_RATIO = 1; // 248/9
+    private static final double INDEXER_GEAR_RATIO = 3.0;
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
@@ -123,7 +124,10 @@ public class IntakeIOTalonFXReal implements IntakeIO {
                 armPosition,
                 armVelocity,
                 armAppliedVolts,
-                armCurrent);
+                armCurrent,
+                indexerVelocity,
+                indexerAppliedVolts,
+                indexerCurrent);
         rollerMotor.optimizeBusUtilization();
         armMotor.optimizeBusUtilization();
         indexerMotor.optimizeBusUtilization();
@@ -133,6 +137,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     public void updateInputs(IntakeIOInputs inputs) {
         BaseStatusSignal.refreshAll(rollerPosition, rollerVelocity, rollerAppliedVolts, rollerCurrent);
         BaseStatusSignal.refreshAll(armPosition, armVelocity, armAppliedVolts, armCurrent);
+        BaseStatusSignal.refreshAll(indexerVelocity, indexerAppliedVolts, indexerCurrent);
 
         // Roller inputs
         inputs.rollerPosition = Units.rotationsToRadians(rollerPosition.getValueAsDouble()) / ROLLER_GEAR_RATIO;
@@ -146,9 +151,10 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
-        // Sensor inputs
-        inputs.hasGamePiece = rollerMotor.getStatorCurrent().getValueAsDouble()
-                > 100.0; // May need to change current limit and detection later
+        // // Indexer inputs
+        // inputs.indexerVelocity = Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / INDEXER_GEAR_RATIO;
+        // inputs.indexerVoltage = indexerAppliedVolts.getValueAsDouble();
+        // inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
     }
 
     @Override
@@ -179,7 +185,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         indexerMotor.stopMotor();
     }
 
-    public void stopArmMotor(){
+    public void stopArmMotor() {
         armMotor.stopMotor();
     }
 }
