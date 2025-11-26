@@ -181,7 +181,7 @@ public class RobotContainer {
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
         // Intake (with timeout)
-        controller.leftBumper().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure,3.0));
+        controller.leftBumper().onTrue(SuperstructureCommands.intakeWithTimeout(superstructure, 3.0));
 
         // Eject for 0.5 seconds
         controller.rightBumper().onTrue(SuperstructureCommands.outtake(superstructure, 0.5));

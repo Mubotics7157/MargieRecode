@@ -21,10 +21,7 @@ public class SuperstructureCommands {
     public static Command intakeWithTimeout(Superstructure superstructure, double timeout) {
         return Commands.sequence(
                         Commands.runOnce(() -> superstructure.requestIntake(), superstructure),
-                        Commands.either(
-                                Commands.waitUntil(() -> superstructure.hasGamePiece()),
-                                Commands.waitSeconds(timeout),
-                                () -> !superstructure.hasGamePiece()),
+                        Commands.waitSeconds(timeout),
                         Commands.runOnce(() -> superstructure.requestIdle(), superstructure))
                 .withName("IntakeWithTimeout")
                 .alongWith(Commands.run(() -> {}, superstructure.getIntake()));
