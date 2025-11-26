@@ -1,10 +1,10 @@
 {
   "hubs": [
     {
-      "x": 139,
-      "y": 95,
-      "width": 1100,
-      "height": 650,
+      "x": -8,
+      "y": -8,
+      "width": 1936,
+      "height": 1048,
       "state": {
         "sidebar": {
           "width": 300,
@@ -13,11 +13,19 @@
             "/RealOutputs",
             "/RealOutputs/SwerveStates",
             "/RealOutputs/SwerveChassisSpeeds",
-            "/RealOutputs/Odometry"
+            "/RealOutputs/Odometry",
+            "/AdvantageKit/RealOutputs",
+            "/AdvantageKit/RealOutputs/Odometry/Robot",
+            "/AdvantageKit/RealOutputs/Vision/Camera1",
+            "/SmartDashboard",
+            "/AdvantageKit/RealOutputs/Superstructure",
+            "/AdvantageKit",
+            "/AdvantageKit/Intake",
+            "/AdvantageKit/Superstructure"
           ]
         },
         "tabs": {
-          "selected": 1,
+          "selected": 2,
           "tabs": [
             {
               "type": 0,
@@ -76,6 +84,51 @@
                     "logType": "Rotation2d",
                     "visible": true,
                     "options": {}
+                  },
+                  {
+                    "type": "states",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/SwerveStates/Measured",
+                    "logType": "SwerveModuleState[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#0000ff",
+                      "arrangement": "0,1,2,3"
+                    }
+                  },
+                  {
+                    "type": "states",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/SwerveStates/SetpointsOptimized",
+                    "logType": "SwerveModuleState[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#00ff00",
+                      "arrangement": "0,1,2,3"
+                    }
+                  },
+                  {
+                    "type": "chassisSpeeds",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/SwerveChassisSpeeds/Measured",
+                    "logType": "ChassisSpeeds",
+                    "visible": true,
+                    "options": {
+                      "color": "#ffff00"
+                    }
+                  },
+                  {
+                    "type": "chassisSpeeds",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/SwerveChassisSpeeds/Setpoints",
+                    "logType": "ChassisSpeeds",
+                    "visible": true,
+                    "options": {
+                      "color": "#ff8c00"
+                    }
+                  },
+                  {
+                    "type": "rotation",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Odometry/Robot/rotation",
+                    "logType": "Rotation2d",
+                    "visible": true,
+                    "options": {}
                   }
                 ],
                 "maxSpeed": 5,
@@ -120,9 +173,45 @@
                       "model": "Crab Bot",
                       "color": "#ff8c00"
                     }
+                  },
+                  {
+                    "type": "robot",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Odometry/Robot",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "2024 KitBot"
+                    }
+                  },
+                  {
+                    "type": "vision",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Vision/Camera0/TagPoses",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#00ff00",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "vision",
+                    "logKey": "NT:/AdvantageKit/RealOutputs/Vision/Camera1/TagPoses",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#00ff00",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "mechanism",
+                    "logKey": "NT:/SmartDashboard/Intake/Mechanism",
+                    "logType": "Mechanism2d",
+                    "visible": true,
+                    "options": {}
                   }
                 ],
-                "game": "2025 Field",
+                "game": "2025 Field (Welded)",
                 "origin": "blue"
               },
               "controllerUUID": "psf0y633oclnjyocus23hcnq1d4tpyte",
@@ -130,17 +219,32 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  1.4695761589768238e-15,
-                  5.999999999999999,
-                  -12
+                  5.19113927039247,
+                  5.88432583191309,
+                  -3.632652004468072
                 ],
                 "cameraTarget": [
-                  0,
-                  0.5,
-                  0
+                  5.830818917232525,
+                  0.5503848177969854,
+                  0.6221527170045741
                 ]
               },
-              "controlsHeight": 200
+              "controlsHeight": 100
+            },
+            {
+              "type": 8,
+              "title": "Joysticks",
+              "controller": [
+                "Xbox Controller (White)",
+                "None",
+                "None",
+                "None",
+                "None",
+                "None"
+              ],
+              "controllerUUID": "txhox0ps7gozefkq4lb225n2hyhj2s3h",
+              "renderer": null,
+              "controlsHeight": 85
             },
             {
               "type": 1,
@@ -459,5 +563,5 @@
     }
   ],
   "satellites": [],
-  "version": "4.0.0-beta-3"
+  "version": "4.1.5"
 }
