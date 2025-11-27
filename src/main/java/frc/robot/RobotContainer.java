@@ -36,7 +36,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
 import frc.robot.subsystems.superstructure.Superstructure;
-import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -82,7 +81,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
-                superstructure = new Superstructure(intake, new SuperstructureIOReal());
+                superstructure = new Superstructure(intake);
                 break;
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
@@ -108,7 +107,7 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
                 setupRobotMechanism();
-                superstructure = new Superstructure(intake, new SuperstructureIOReal());
+                superstructure = new Superstructure(intake);
                 break;
 
             default:
@@ -122,7 +121,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
-                superstructure = new Superstructure(intake, new SuperstructureIOReal());
+                superstructure = new Superstructure(intake);
                 break;
         }
 
@@ -183,14 +182,8 @@ public class RobotContainer {
         // Intake
         controller.leftBumper().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
 
-        // Eject for 0.5 seconds
+        // Eject
         controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
-
-        // Stow (AKA Return to Idle)
-        controller.a().onTrue(SuperstructureCommands.returnToIdle(superstructure)); // a
-
-        // Emergency stop
-        controller.y().onTrue(SuperstructureCommands.emergencyStop(superstructure));
     }
 
     /**
