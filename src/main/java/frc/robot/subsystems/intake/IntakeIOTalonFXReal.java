@@ -43,6 +43,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private final StatusSignal<Current> armCurrent;
 
     // Status Signals - Indexer
+    private final StatusSignal<Angle> indexerPosition;
     private final StatusSignal<AngularVelocity> indexerVelocity;
     private final StatusSignal<Voltage> indexerAppliedVolts;
     private final StatusSignal<Current> indexerCurrent;
@@ -104,6 +105,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerCurrent = rollerMotor.getStatorCurrent();
 
         // Create status signals - Indexer
+        indexerPosition = indexerMotor.getPosition();
         indexerVelocity = indexerMotor.getVelocity();
         indexerAppliedVolts = indexerMotor.getMotorVoltage();
         indexerCurrent = indexerMotor.getStatorCurrent();
@@ -127,7 +129,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
                 armCurrent,
                 indexerVelocity,
                 indexerAppliedVolts,
-                indexerCurrent);
+                indexerCurrent,
+                indexerPosition);
         rollerMotor.optimizeBusUtilization();
         armMotor.optimizeBusUtilization();
         indexerMotor.optimizeBusUtilization();
@@ -151,10 +154,11 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
-        // // Indexer inputs
-        // inputs.indexerVelocity = Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / INDEXER_GEAR_RATIO;
-        // inputs.indexerVoltage = indexerAppliedVolts.getValueAsDouble();
-        // inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
+        // Indexer inputs
+        inputs.indexerPosition = Units.rotationsToRadians(indexerPosition.getValueAsDouble()) / INDEXER_GEAR_RATIO;
+        inputs.indexerVelocity = Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / INDEXER_GEAR_RATIO;
+        inputs.indexerVoltage = indexerAppliedVolts.getValueAsDouble();
+        inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
     }
 
     @Override
