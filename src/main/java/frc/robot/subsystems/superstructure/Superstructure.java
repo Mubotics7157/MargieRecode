@@ -1,38 +1,42 @@
 package frc.robot.subsystems.superstructure;
 
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.Intake;
 import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix6.mechanisms.swerve.LegacySwerveRequest.Idle;
-
 public class Superstructure extends SubsystemBase {
 
-    public enum Goal{
+    public enum Goal {
         IDLE,
         INTAKING,
         OUTTAKING;
     }
 
-    private final Intake intake;
     private final SuperstructureIOInputsAutoLogged inputs = new SuperstructureIOInputsAutoLogged();
+
+    private final Intake intake;
+    private final SuperstructureIO io;
 
     private Goal currentGoal = Goal.IDLE;
     private Goal desiredGoal = Goal.IDLE;
 
-    public Superstructure(Intake intake) {
+    public Superstructure(Intake intake, SuperstructureIO io) {
         this.intake = intake;
+        this.io = io;
     }
 
     @Override
     public void periodic() {
-        // Update inputs from subsystems
+        // Process Inputs
+        io.updateInputs(inputs);
         Logger.processInputs("Superstructure", inputs);
 
+        updateGoalInfo();
+
         // Log current states
-        Logger.recordOutput("Superstructure/CurrentState", currentGoal.toString());
-        Logger.recordOutput("Superstructure/DesiredState", desiredGoal.toString());
+        Logger.recordOutput("Superstructure/CurrentGoal", currentGoal.toString());
+        Logger.recordOutput("Superstructure/DesiredGoal", desiredGoal.toString());
+        Logger.recordOutput("Superstructure/AtGoal", atGoal());
 
         currentGoal = desiredGoal;
 
@@ -52,20 +56,26 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
+    private void updateGoalInfo() {
+        inputs.currentGoal = currentGoal;
+        inputs.desiredGoal = desiredGoal;
+        inputs.atGoal = atGoal();
+    }
+
     public Intake getIntake() {
         return this.intake;
     }
 
-    public void setGoal (Goal goal){
+    public void setGoal(Goal goal) {
         desiredGoal = goal;
     }
-    
-    public boolean atGoal(){
-        if (currentGoal != desiredGoal){
+
+    public boolean atGoal() {
+        if (currentGoal != desiredGoal) {
             return false;
         }
 
-        return switch (currentGoal){
+        return switch (currentGoal) {
             case IDLE -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
             case INTAKING, OUTTAKING -> intake.isArmAtPosition(Intake.ARM_DEPLOYED_POSITION, 0.1);
         };

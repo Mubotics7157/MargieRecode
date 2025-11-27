@@ -75,7 +75,6 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
             simulatedGamePiece = false;
         }
-
     }
 
     @Override

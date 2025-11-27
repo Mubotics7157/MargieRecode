@@ -36,6 +36,8 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
 import frc.robot.subsystems.superstructure.Superstructure;
+import frc.robot.subsystems.superstructure.SuperstructureIO;
+import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -81,7 +83,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
-                superstructure = new Superstructure(intake);
+                superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
@@ -107,7 +109,7 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
                 setupRobotMechanism();
-                superstructure = new Superstructure(intake);
+                superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
 
             default:
@@ -121,7 +123,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
-                superstructure = new Superstructure(intake);
+                superstructure = new Superstructure(intake, new SuperstructureIO() {});
                 break;
         }
 
@@ -180,10 +182,10 @@ public class RobotContainer {
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
         // Intake
-        controller.leftBumper().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
+        controller.povUp().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
 
         // Eject
-        controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
+        controller.povDown().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
     }
 
     /**
