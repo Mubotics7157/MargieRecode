@@ -5,6 +5,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.Intake;
 import org.littletonrobotics.junction.Logger;
 
+import com.ctre.phoenix6.mechanisms.swerve.LegacySwerveRequest.Idle;
+
 public class Superstructure extends SubsystemBase {
 
     public enum Goal{
@@ -52,5 +54,20 @@ public class Superstructure extends SubsystemBase {
 
     public Intake getIntake() {
         return this.intake;
+    }
+
+    public void setGoal (Goal goal){
+        desiredGoal = goal;
+    }
+
+    public boolean atGoal(){
+        if (currentGoal != desiredGoal){
+            return false;
+        }
+
+        return switch (currentGoal){
+            case IDLE -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
+            case INTAKING, OUTTAKING -> intake.isArmAtPosition(Intake.ARM_DEPLOYED_POSITION, 0.1);
+        };
     }
 }
