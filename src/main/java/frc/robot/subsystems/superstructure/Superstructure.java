@@ -59,7 +59,7 @@ public class Superstructure extends SubsystemBase {
     public void setGoal (Goal goal){
         desiredGoal = goal;
     }
-
+    
     public boolean atGoal(){
         if (currentGoal != desiredGoal){
             return false;
