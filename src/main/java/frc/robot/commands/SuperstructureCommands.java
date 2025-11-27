@@ -26,11 +26,11 @@ public class SuperstructureCommands {
     }
 
     //Intake command for autos, waits until the intake has reached its goal
-    // public static Command intakeUntilReady(Superstructure superstructure) {
-    //     return Commands.sequence(
-    //         Commands.runOnce(() -> superstructure.setGoal(Goal.INTAKING)),
-    //         Commands.waitUntil(superstructure::isAtGoal)
-    //     ).finallyDo(() -> superstructure.setGoal(Goal.IDLE))
-    //      .withName("IntakeUntilReady");
-    // }
+    public static Command intakeUntilReady(Superstructure superstructure) {
+        return Commands.sequence(
+            Commands.runOnce(() -> superstructure.setGoal(Goal.INTAKING)),
+            Commands.waitUntil(superstructure::atGoal)
+        ).finallyDo(() -> superstructure.setGoal(Goal.IDLE))
+         .withName("IntakeUntilReady");
+    }
 }
