@@ -16,12 +16,10 @@
             "/RealOutputs/Odometry",
             "/AdvantageKit/RealOutputs",
             "/AdvantageKit/RealOutputs/Odometry/Robot",
+            "/AdvantageKit/RealOutputs/Vision",
             "/AdvantageKit/RealOutputs/Vision/Camera1",
             "/SmartDashboard",
-            "/AdvantageKit/RealOutputs/Superstructure",
-            "/AdvantageKit",
-            "/AdvantageKit/Intake",
-            "/AdvantageKit/Superstructure"
+            "/SmartDashboard/Intake"
           ]
         },
         "tabs": {
@@ -219,32 +217,17 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  5.19113927039247,
-                  5.88432583191309,
-                  -3.632652004468072
+                  4.889792955692206,
+                  1.4477331817350256,
+                  -1.5030132683871433
                 ],
                 "cameraTarget": [
-                  5.830818917232525,
+                  5.9462424992067175,
                   0.5503848177969854,
-                  0.6221527170045741
+                  0.6337024678673298
                 ]
               },
-              "controlsHeight": 100
-            },
-            {
-              "type": 8,
-              "title": "Joysticks",
-              "controller": [
-                "Xbox Controller (White)",
-                "None",
-                "None",
-                "None",
-                "None",
-                "None"
-              ],
-              "controllerUUID": "txhox0ps7gozefkq4lb225n2hyhj2s3h",
-              "renderer": null,
-              "controlsHeight": 85
+              "controlsHeight": 200
             },
             {
               "type": 1,

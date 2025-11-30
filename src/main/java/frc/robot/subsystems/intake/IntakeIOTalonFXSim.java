@@ -8,9 +8,11 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     // Hardware configuration constants
     private static final double ROLLER_GEAR_RATIO = 3.0;
     private static final double ARM_GEAR_RATIO = 100.0;
+    private static final double INDEXER_GEAR_RATIO = 3.0;
 
     // Simulation parameters
     private static final double ROLLER_MOI = 0.001; // kg*m^2
+    private static final double INDEXER_MOI = 0.001; // kg*m^2
     private static final double ARM_MOI = 0.1; // kg*m^2
 
     // Arm position constants (radians)
@@ -20,9 +22,11 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     // Motor simulations
     private final DCMotorSim rollerSim;
     private final DCMotorSim armSim;
+    private final DCMotorSim indexerSim;
 
     // Applied voltages
     private double rollerAppliedVolts = 0.0;
+    private double indexerAppliedVolts = 0.0;
     private double armAppliedVolts = 0.0;
 
     // Simulated game piece detection
@@ -33,6 +37,11 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         // Using LinearSystemId to create the plant
         rollerSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), ROLLER_MOI, ROLLER_GEAR_RATIO),
+                DCMotor.getKrakenX60(1));
+        
+        // Kraken X60 for indexer (1 motor, geared)
+        indexerSim = new DCMotorSim(
+                LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), INDEXER_MOI, INDEXER_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         // Kraken X60 for arm (1 motor, highly geared)
@@ -46,6 +55,7 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         // Update simulations
         rollerSim.update(0.02);
         armSim.update(0.02);
+        indexerSim.update(0.02);
 
         // Clamp arm position to realistic bounds
         if (armSim.getAngularPositionRad() < ARM_MIN_ANGLE) {
@@ -66,18 +76,29 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         inputs.armVoltage = armAppliedVolts;
         inputs.armCurrent = armSim.getCurrentDrawAmps();
 
-        // Simulate game piece detection based on roller speed
-        // If roller is spinning fast enough, assume we have a game piece
-        if (Math.abs(inputs.rollerVelocity) > 5.0) { // rad/s threshold
+        // Update indexer inputs
+        inputs.indexerPosition = indexerSim.getAngularPositionRad();
+        inputs.indexerVelocity = indexerSim.getAngularVelocityRadPerSec();
+        inputs.indexerVoltage = indexerAppliedVolts;
+        inputs.indexerCurrent = indexerSim.getCurrentDrawAmps();
+
+        if (!simulatedGamePiece
+                && rollerAppliedVolts > 6.0
+                && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
             simulatedGamePiece = true;
         }
-        inputs.hasGamePiece = simulatedGamePiece;
+
+        if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
+            simulatedGamePiece = false;
+        }
     }
 
     @Override
     public void setRollerVoltage(double voltage) {
         rollerAppliedVolts = voltage;
         rollerSim.setInputVoltage(voltage);
+        indexerAppliedVolts = voltage;
+        indexerSim.setInputVoltage(voltage);
     }
 
     @Override
@@ -107,10 +128,5 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     @Override
     public void stopRoller() {
         setRollerVoltage(0.0);
-    }
-    
-    // For testing - manually set game piece detection 
-    public void setSimulatedGamePiece(boolean hasGamePiece) {
-        this.simulatedGamePiece = hasGamePiece;
     }
 }
