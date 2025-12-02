@@ -21,11 +21,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
-import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
-import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
-import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -39,6 +34,7 @@ import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.SuperstructureIO;
 import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
+import frc.robot.util.ElasticDashboard;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -55,7 +51,9 @@ public class RobotContainer {
     private final Vision vision;
     private final Intake intake;
     private final Superstructure superstructure;
-    private final Mechanism2d robotMechanism = new Mechanism2d(4, 4); // Intake visualization
+
+    // Elastic Dashboard
+    private final ElasticDashboard elasticDashboard;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -108,7 +106,6 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
-                setupRobotMechanism();
                 superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
 
@@ -127,6 +124,9 @@ public class RobotContainer {
                 break;
         }
 
+        // Initialize Elastic Dashboard
+        elasticDashboard = new ElasticDashboard();
+
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
@@ -142,14 +142,13 @@ public class RobotContainer {
 
         // Configure the button bindings
         configureButtonBindings();
-    }
 
-    private void setupRobotMechanism() {
-        // Robot base
-        MechanismRoot2d robotBase = robotMechanism.getRoot("RobotBase", 2, 0.2);
-
-        // Drivetrain
-        robotBase.append(new MechanismLigament2d("Chassis", 0.8, 0, 10, new Color8Bit(Color.kBlue)));
+        // Configure camera streams (adjust URLs if needed)
+        if (Constants.currentMode == Constants.Mode.REAL) {
+            elasticDashboard.setCameraStreams(
+                    "mjpg:http://limelight-" + camera0Name + ".local:5800",
+                    "mjpg:http://limelight-" + camera1Name + ".local:5800");
+        }
     }
 
     /**
@@ -162,15 +161,6 @@ public class RobotContainer {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> -controller.getRightX()));
-
-        // // Lock to 0° when A button is held
-        // controller
-        //         .povDown()
-        //         .whileTrue(DriveCommands.joystickDriveAtAngle(
-        //                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
-
-        // // Switch to X pattern when X button is pressed
-        // controller.povUp().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -213,5 +203,15 @@ public class RobotContainer {
                 "FieldSimulation/Coral", SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
         Logger.recordOutput(
                 "FieldSimulation/Algae", SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
+    }
+
+    /** Updates the Elastic Dashboard. Should be called from Robot.robotPeriodic(). */
+    public void updateDashboard() {
+        elasticDashboard.update(drive, superstructure);
+    }
+
+    /** Gets the field widget from Elastic Dashboard for trajectory visualization. */
+    public ElasticDashboard getElasticDashboard() {
+        return elasticDashboard;
     }
 }
