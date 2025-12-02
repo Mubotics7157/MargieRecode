@@ -178,14 +178,14 @@ public class RobotContainer {
                         driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-        controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        controller.povDown().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
         // Intake
-        controller.povUp().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
+        controller.leftBumper().whileTrue(SuperstructureCommands.intake(superstructure)); // left bumper
 
         // Eject
-        controller.povDown().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
+        controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
     }
 
     /**
