@@ -38,7 +38,7 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         rollerSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), ROLLER_MOI, ROLLER_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
-        
+
         // Kraken X60 for indexer (1 motor, geared)
         indexerSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), INDEXER_MOI, INDEXER_GEAR_RATIO),
@@ -94,7 +94,7 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     }
 
     @Override
-    public void setRollerVoltage(double voltage) {
+    public void setRollerDutyCycle(double voltage) {
         rollerAppliedVolts = voltage;
         rollerSim.setInputVoltage(voltage);
         indexerAppliedVolts = voltage;
@@ -127,6 +127,6 @@ public class IntakeIOTalonFXSim implements IntakeIO {
 
     @Override
     public void stopRoller() {
-        setRollerVoltage(0.0);
+        setRollerDutyCycle(0.0);
     }
 }

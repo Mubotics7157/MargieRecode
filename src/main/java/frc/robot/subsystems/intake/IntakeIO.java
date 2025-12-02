@@ -26,7 +26,7 @@ public interface IntakeIO {
 
     default void updateInputs(IntakeIOInputs inputs) {}
 
-    default void setRollerVoltage(double voltage) {}
+    default void setRollerDutyCycle(double value) {}
 
     default void setArmVoltage(double voltage) {}
 

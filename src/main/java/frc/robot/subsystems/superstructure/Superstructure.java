@@ -43,15 +43,15 @@ public class Superstructure extends SubsystemBase {
         switch (currentGoal) {
             case IDLE:
                 intake.stowArm();
-                intake.setRollerVoltage(0.0);
+                intake.setRollerDutyCycle(0.0);
                 break;
             case INTAKING:
                 intake.deployArm();
-                intake.setRollerVoltage(6);
+                intake.setRollerDutyCycle(0.5);
                 break;
             case OUTTAKING:
                 intake.deployArm();
-                intake.setRollerVoltage(-6);
+                intake.setRollerDutyCycle(-0.5);
                 break;
         }
     }

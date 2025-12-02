@@ -98,6 +98,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
         tryUntilOk(5, () -> armMotor.getConfigurator().apply(armConfig, 0.25));
 
+        resetArmPosition();
+
         // Create status signals - Roller
         rollerPosition = rollerMotor.getPosition();
         rollerVelocity = rollerMotor.getVelocity();
@@ -162,9 +164,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     }
 
     @Override
-    public void setRollerVoltage(double voltage) {
-        rollerMotor.setControl(voltageRequest.withOutput(voltage));
-        indexerMotor.setControl(voltageRequest.withOutput(voltage));
+    public void setRollerDutyCycle(double value) {
+        rollerMotor.setControl(voltageRequest.withOutput(value));
+        indexerMotor.setControl(voltageRequest.withOutput(value));
     }
 
     @Override
