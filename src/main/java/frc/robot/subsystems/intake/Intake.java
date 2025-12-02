@@ -12,7 +12,7 @@ import org.littletonrobotics.junction.Logger;
 public class Intake extends SubsystemBase {
     // Arm position constants (radians)
     public static final double ARM_STOWED_POSITION = 0.0;
-    public static final double ARM_DEPLOYED_POSITION = -1.62;
+    public static final double ARM_DEPLOYED_POSITION = -8; // -1.62
 
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
@@ -61,8 +61,8 @@ public class Intake extends SubsystemBase {
     }
 
     // Set roller voltage (-12 to +12 volts)
-    public void setRollerVoltage(double voltage) {
-        io.setRollerVoltage(voltage);
+    public void setRollerDutyCycle(double value) {
+        io.setRollerDutyCycle(value);
     }
 
     // Set arm voltage (-12 to +12 volts) for manual control
