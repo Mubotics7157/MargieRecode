@@ -50,9 +50,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     public IntakeIOTalonFXReal() {
         // Initialize hardware
-        rollerMotor = new TalonFX(ROLLER_MOTOR_ID, "rio"); // CHANGE TO SWERVE LATER
-        armMotor = new TalonFX(ARM_MOTOR_ID, "rio"); // CHANGE TO SWERVE LATER
-        indexerMotor = new TalonFX(INDEXER_MOTOR_ID, "rio"); // CHANGE LATER TO SWERVE
+        rollerMotor = new TalonFX(ROLLER_MOTOR_ID, "swerve"); // CHANGE TO SWERVE LATER
+        armMotor = new TalonFX(ARM_MOTOR_ID, "swerve"); // CHANGE TO SWERVE LATER
+        indexerMotor = new TalonFX(INDEXER_MOTOR_ID, "swerve"); // CHANGE LATER TO SWERVE
 
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
