@@ -90,29 +90,67 @@ public class Intake extends SubsystemBase {
         io.resetArmPosition();
     }
 
-    // Get roller position in radians
+    // GETTERS
+
+    // Roller telemetry
     public double getRollerPositionRad() {
         return inputs.rollerPosition;
     }
 
-    // Get roller velocity in rad/s
     public double getRollerVelocityRadPerSec() {
         return inputs.rollerVelocity;
     }
 
-    // Get arm position in radians
+    public double getRollerCurrent() {
+        return inputs.rollerCurrent;
+    }
+
+    public double getRollerVoltage() {
+        return inputs.rollerVoltage;
+    }
+
+    // Arm telemetry
     public double getArmPositionRad() {
         return inputs.armPosition;
     }
 
-    // Get arm velocity in rad/s
     public double getArmVelocityRadPerSec() {
         return inputs.armVelocity;
+    }
+
+    public double getArmCurrent() {
+        return inputs.armCurrent;
+    }
+
+    public double getArmVoltage() {
+        return inputs.armVoltage;
+    }
+
+    // Indexer telemetry
+    public double getIndexerPositionRad() {
+        return inputs.indexerPosition;
+    }
+
+    public double getIndexerVelocityRadPerSec() {
+        return inputs.indexerVelocity;
+    }
+
+    public double getIndexerCurrent() {
+        return inputs.indexerCurrent;
+    }
+
+    public double getIndexerVoltage() {
+        return inputs.indexerVoltage;
     }
 
     // Check if arm is at target position (within tolerance)
     public boolean isArmAtPosition(double targetRad, double toleranceRad) {
         return Math.abs(inputs.armPosition - targetRad) < toleranceRad;
+    }
+
+    // Get the Mechanism2d for dashboard display
+    public Mechanism2d getMechanism() {
+        return mechanism;
     }
 
     // Stop all motors

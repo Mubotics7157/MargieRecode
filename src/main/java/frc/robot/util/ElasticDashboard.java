@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.superstructure.Superstructure;
 import java.util.Map;
@@ -46,20 +45,19 @@ public class ElasticDashboard {
     private GenericEntry driveRotationEntry;
     private GenericEntry gyroYawEntry;
 
-        // Mechanism tab widgets
-        private GenericEntry armCurrentEntry;
-        private GenericEntry armVoltageEntry;
-        private GenericEntry armPositionEntry;
-        private GenericEntry armVelocityEntry;
-        private GenericEntry rollerCurrentEntry;
-        private GenericEntry rollerVoltageEntry;
-        private GenericEntry rollerPositionEntry;
-        private GenericEntry rollerVelocityEntry;
-        private GenericEntry indexerCurrentEntry;
-        private GenericEntry indexerVoltageEntry;
-        private GenericEntry indexerPositionEntry;
-        private GenericEntry indexerVelocityEntry;
-
+    // Mechanism tab widgets
+    private GenericEntry armCurrentEntry;
+    private GenericEntry armVoltageEntry;
+    private GenericEntry armPositionEntry;
+    private GenericEntry armVelocityEntry;
+    private GenericEntry rollerCurrentEntry;
+    private GenericEntry rollerVoltageEntry;
+    private GenericEntry rollerPositionEntry;
+    private GenericEntry rollerVelocityEntry;
+    private GenericEntry indexerCurrentEntry;
+    private GenericEntry indexerVoltageEntry;
+    private GenericEntry indexerPositionEntry;
+    private GenericEntry indexerVelocityEntry;
 
     // Vision tab widgets (placeholders for camera streams)
     private GenericEntry camera0StreamEntry;
@@ -87,7 +85,7 @@ public class ElasticDashboard {
         // Field widget - large visualization
         mainTab.add("Field", field)
                 .withWidget(BuiltInWidgets.kField)
-                .withSize(6, 4)
+                .withSize(6, 3)
                 .withPosition(0, 0);
 
         // Robot Status layout
@@ -157,6 +155,21 @@ public class ElasticDashboard {
                 .withWidget(BuiltInWidgets.kGyro)
                 .getEntry();
 
+        // Intake value summary
+        ShuffleboardLayout intakeSummary = mainTab.getLayout("Intake Summary", BuiltInLayouts.kList)
+                .withSize(2, 3)
+                .withPosition(6, 3);
+
+        intakeSummary
+                .add("Arm Position", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", -10, "max", 1));
+
+        intakeSummary
+                .add("Roller Speed", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", -100, "max", 100));
+
         // Swerve module visualization
         ShuffleboardLayout moduleLayout = mainTab.getLayout("Swerve Modules", BuiltInLayouts.kGrid)
                 .withSize(4, 2)
@@ -199,75 +212,66 @@ public class ElasticDashboard {
     }
 
     private void setupMechTab() {
-        ShuffleboardLayout IntakeArmValues = mechanismTab.getLayout("Intake Arm", BuiltInLayouts.kList)
+        ShuffleboardLayout IntakeArmValues = mechanismTab
+                .getLayout("Intake Arm", BuiltInLayouts.kList)
                 .withSize(2, 4)
                 .withPosition(0, 0);
-        
-        armCurrentEntry = IntakeArmValues
-                .add("Arm Current", 0.0)
-                .withWidget(BuiltInWidgets.kTextView)
-                .getEntry();
-        
-        armVoltageEntry = IntakeArmValues
-                .add("Arm Voltage", 0.0)
-                .withWidget(BuiltInWidgets.kVoltageView)
-                .getEntry();
-        
-        armPositionEntry = IntakeArmValues
-                .add("Arm Position", 0.0)
-                .withWidget(BuiltInWidgets.kTextView)
-                .getEntry();
-        
-        armVelocityEntry = IntakeArmValues
-                .add("Arm Velocity", 0.0)
+
+        armCurrentEntry = IntakeArmValues.add("Arm Current", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
 
-        ShuffleboardLayout IntakeRollerValues = mechanismTab.getLayout("Intake Roller", BuiltInLayouts.kList)
+        armVoltageEntry = IntakeArmValues.add("Arm Voltage", 0.0)
+                .withWidget(BuiltInWidgets.kVoltageView)
+                .getEntry();
+
+        armPositionEntry = IntakeArmValues.add("Arm Position (Rad)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        armVelocityEntry = IntakeArmValues.add("Arm Velocity (Rad/s)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        ShuffleboardLayout IntakeRollerValues = mechanismTab
+                .getLayout("Intake Roller", BuiltInLayouts.kList)
                 .withSize(2, 4)
                 .withPosition(2, 0);
 
-        rollerCurrentEntry = IntakeRollerValues
-                .add("Roller Current", 0.0)
+        rollerCurrentEntry = IntakeRollerValues.add("Roller Current", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
 
-        rollerVoltageEntry = IntakeRollerValues
-                .add("Roller Voltage", 0.0)
+        rollerVoltageEntry = IntakeRollerValues.add("Roller Voltage", 0.0)
                 .withWidget(BuiltInWidgets.kVoltageView)
                 .getEntry();
 
-        rollerPositionEntry = IntakeRollerValues
-                .add("Roller Position", 0.0)
+        rollerPositionEntry = IntakeRollerValues.add("Roller Position (Rad)", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
 
-        rollerVelocityEntry = IntakeRollerValues
-                .add("Roller Velocity", 0.0)
+        rollerVelocityEntry = IntakeRollerValues.add("Roller Velocity (Rad/s)", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
 
-        ShuffleboardLayout IndexerValues = mechanismTab.getLayout("Indexer", BuiltInLayouts.kList)
+        ShuffleboardLayout IndexerValues = mechanismTab
+                .getLayout("Indexer", BuiltInLayouts.kList)
                 .withSize(2, 4)
                 .withPosition(4, 0);
 
-        indexerCurrentEntry = IndexerValues
-                .add("Indexer Current", 0.0)
+        indexerCurrentEntry = IndexerValues.add("Indexer Current", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
-        
-        indexerVoltageEntry = IndexerValues
-                .add("Indexer Voltage", 0.0)
+
+        indexerVoltageEntry = IndexerValues.add("Indexer Voltage", 0.0)
                 .withWidget(BuiltInWidgets.kVoltageView)
                 .getEntry();
 
-        indexerPositionEntry = IndexerValues
-                .add("Indexer Position", 0.0)
+        indexerPositionEntry = IndexerValues.add("Indexer Position (Rad)", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
 
-        indexerVelocityEntry = IndexerValues
-                .add("Indexer Velocity", 0.0)
+        indexerVelocityEntry = IndexerValues.add("Indexer Velocity (Rad/s)", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
     }
@@ -299,7 +303,7 @@ public class ElasticDashboard {
         // Update field
         updateField(drive);
 
-        //Update Mechanism values
+        // Update Mechanism values
         updateMechs(intake);
     }
 
@@ -310,27 +314,25 @@ public class ElasticDashboard {
         desiredStateEntry.setString(superstructure.getDesiredGoal().toString());
     }
 
-    private void updateMechs(Intake intake){
-        IntakeIO.IntakeIOInputs inputs = new IntakeIO.IntakeIOInputs();
-        intake.updateInputs(inputs);
+    private void updateMechs(Intake intake) {
 
         // Update Intake Arm values
-        armCurrentEntry.setDouble(inputs.armCurrent);
-        armVoltageEntry.setDouble(inputs.armVoltage);
-        armPositionEntry.setDouble(inputs.armPosition);
-        armVelocityEntry.setDouble(inputs.armVelocity);
+        armCurrentEntry.setDouble(intake.getArmCurrent());
+        armVoltageEntry.setDouble(intake.getArmVoltage());
+        armPositionEntry.setDouble(intake.getArmPositionRad());
+        armVelocityEntry.setDouble(intake.getArmVelocityRadPerSec());
 
         // Update Intake Roller values
-        rollerCurrentEntry.setDouble(inputs.rollerCurrent);
-        rollerVoltageEntry.setDouble(inputs.rollerVoltage);
-        rollerPositionEntry.setDouble(inputs.rollerPosition);
-        rollerVelocityEntry.setDouble(inputs.rollerVelocity);
+        rollerCurrentEntry.setDouble(intake.getRollerCurrent());
+        rollerVoltageEntry.setDouble(intake.getRollerVoltage());
+        rollerPositionEntry.setDouble(intake.getRollerPositionRad());
+        rollerVelocityEntry.setDouble(intake.getRollerVelocityRadPerSec());
 
         // Update Indexer values
-        indexerCurrentEntry.setDouble(inputs.indexerCurrent);
-        indexerVoltageEntry.setDouble(inputs.indexerVoltage);
-        indexerPositionEntry.setDouble(inputs.indexerPosition);
-        indexerVelocityEntry.setDouble(inputs.indexerVelocity);
+        indexerCurrentEntry.setDouble(intake.getIndexerCurrent());
+        indexerVoltageEntry.setDouble(intake.getIndexerVoltage());
+        indexerPositionEntry.setDouble(intake.getIndexerPositionRad());
+        indexerVelocityEntry.setDouble(intake.getIndexerVelocityRadPerSec());
     }
 
     // Updates drive info
