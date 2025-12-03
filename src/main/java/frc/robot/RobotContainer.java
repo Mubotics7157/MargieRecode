@@ -207,7 +207,7 @@ public class RobotContainer {
 
     /** Updates the Elastic Dashboard. Should be called from Robot.robotPeriodic(). */
     public void updateDashboard() {
-        elasticDashboard.update(drive, superstructure);
+        elasticDashboard.update(drive, superstructure, intake);
     }
 
     /** Gets the field widget from Elastic Dashboard for trajectory visualization. */

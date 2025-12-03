@@ -14,6 +14,8 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.superstructure.Superstructure;
 import java.util.Map;
 
@@ -25,6 +27,7 @@ public class ElasticDashboard {
     // Tabs
     private final ShuffleboardTab mainTab;
     private final ShuffleboardTab visionTab;
+    private final ShuffleboardTab mechanismTab;
 
     // Field widget
     private final Field2d field;
@@ -43,6 +46,21 @@ public class ElasticDashboard {
     private GenericEntry driveRotationEntry;
     private GenericEntry gyroYawEntry;
 
+        // Mechanism tab widgets
+        private GenericEntry armCurrentEntry;
+        private GenericEntry armVoltageEntry;
+        private GenericEntry armPositionEntry;
+        private GenericEntry armVelocityEntry;
+        private GenericEntry rollerCurrentEntry;
+        private GenericEntry rollerVoltageEntry;
+        private GenericEntry rollerPositionEntry;
+        private GenericEntry rollerVelocityEntry;
+        private GenericEntry indexerCurrentEntry;
+        private GenericEntry indexerVoltageEntry;
+        private GenericEntry indexerPositionEntry;
+        private GenericEntry indexerVelocityEntry;
+
+
     // Vision tab widgets (placeholders for camera streams)
     private GenericEntry camera0StreamEntry;
     private GenericEntry camera1StreamEntry;
@@ -54,12 +72,14 @@ public class ElasticDashboard {
         // Create tabs
         mainTab = Shuffleboard.getTab("Main");
         visionTab = Shuffleboard.getTab("Vision");
+        mechanismTab = Shuffleboard.getTab("Mechanisms");
 
         // Initialize field
         field = new Field2d();
 
         setupMainTab();
         setupVisionTab();
+        setupMechTab();
     }
 
     /** Sets up the main competition tab with essential robot information. */
@@ -144,7 +164,7 @@ public class ElasticDashboard {
                 .withProperties(Map.of("Number of columns", 2, "Number of rows", 2));
     }
 
-    /** Sets up the vision tab with camera streams. */
+    // Sets up the vision tab with camera streams
     private void setupVisionTab() {
         // Camera 0 stream
         camera0StreamEntry = visionTab
@@ -178,8 +198,82 @@ public class ElasticDashboard {
                 .withPosition(0, 4);
     }
 
+    private void setupMechTab() {
+        ShuffleboardLayout IntakeArmValues = mechanismTab.getLayout("Intake Arm", BuiltInLayouts.kList)
+                .withSize(2, 4)
+                .withPosition(0, 0);
+        
+        armCurrentEntry = IntakeArmValues
+                .add("Arm Current", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+        
+        armVoltageEntry = IntakeArmValues
+                .add("Arm Voltage", 0.0)
+                .withWidget(BuiltInWidgets.kVoltageView)
+                .getEntry();
+        
+        armPositionEntry = IntakeArmValues
+                .add("Arm Position", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+        
+        armVelocityEntry = IntakeArmValues
+                .add("Arm Velocity", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        ShuffleboardLayout IntakeRollerValues = mechanismTab.getLayout("Intake Roller", BuiltInLayouts.kList)
+                .withSize(2, 4)
+                .withPosition(2, 0);
+
+        rollerCurrentEntry = IntakeRollerValues
+                .add("Roller Current", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        rollerVoltageEntry = IntakeRollerValues
+                .add("Roller Voltage", 0.0)
+                .withWidget(BuiltInWidgets.kVoltageView)
+                .getEntry();
+
+        rollerPositionEntry = IntakeRollerValues
+                .add("Roller Position", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        rollerVelocityEntry = IntakeRollerValues
+                .add("Roller Velocity", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        ShuffleboardLayout IndexerValues = mechanismTab.getLayout("Indexer", BuiltInLayouts.kList)
+                .withSize(2, 4)
+                .withPosition(4, 0);
+
+        indexerCurrentEntry = IndexerValues
+                .add("Indexer Current", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+        
+        indexerVoltageEntry = IndexerValues
+                .add("Indexer Voltage", 0.0)
+                .withWidget(BuiltInWidgets.kVoltageView)
+                .getEntry();
+
+        indexerPositionEntry = IndexerValues
+                .add("Indexer Position", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        indexerVelocityEntry = IndexerValues
+                .add("Indexer Velocity", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+    }
+
     // Updates all dashboard values
-    public void update(Drive drive, Superstructure superstructure) {
+    public void update(Drive drive, Superstructure superstructure, Intake intake) {
         // Update match time
         double matchTime = DriverStation.getMatchTime();
         matchTimeEntry.setDouble(matchTime);
@@ -204,10 +298,40 @@ public class ElasticDashboard {
 
         // Update field
         updateField(drive);
+
+        //Update Mechanism values
+        updateMechs(intake);
     }
 
-    /** Updates superstructure state information. */
-    private void updateSuperstructureState(Superstructure superstructure) {}
+    // Updates superstructure state info
+    private void updateSuperstructureState(Superstructure superstructure) {
+        atGoalEntry.setBoolean(superstructure.atGoal());
+        currentStateEntry.setString(superstructure.getCurrentGoal().toString());
+        desiredStateEntry.setString(superstructure.getDesiredGoal().toString());
+    }
+
+    private void updateMechs(Intake intake){
+        IntakeIO.IntakeIOInputs inputs = new IntakeIO.IntakeIOInputs();
+        intake.updateInputs(inputs);
+
+        // Update Intake Arm values
+        armCurrentEntry.setDouble(inputs.armCurrent);
+        armVoltageEntry.setDouble(inputs.armVoltage);
+        armPositionEntry.setDouble(inputs.armPosition);
+        armVelocityEntry.setDouble(inputs.armVelocity);
+
+        // Update Intake Roller values
+        rollerCurrentEntry.setDouble(inputs.rollerCurrent);
+        rollerVoltageEntry.setDouble(inputs.rollerVoltage);
+        rollerPositionEntry.setDouble(inputs.rollerPosition);
+        rollerVelocityEntry.setDouble(inputs.rollerVelocity);
+
+        // Update Indexer values
+        indexerCurrentEntry.setDouble(inputs.indexerCurrent);
+        indexerVoltageEntry.setDouble(inputs.indexerVoltage);
+        indexerPositionEntry.setDouble(inputs.indexerPosition);
+        indexerVelocityEntry.setDouble(inputs.indexerVelocity);
+    }
 
     // Updates drive info
     private void updateDriveTelemetry(Drive drive) {

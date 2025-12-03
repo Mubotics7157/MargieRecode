@@ -66,6 +66,14 @@ public class Superstructure extends SubsystemBase {
         return this.intake;
     }
 
+    public Goal getCurrentGoal() {
+        return currentGoal;
+    }
+
+    public Goal getDesiredGoal() {
+        return desiredGoal;
+    }
+
     public void setGoal(Goal goal) {
         desiredGoal = goal;
     }
