@@ -17,6 +17,7 @@ import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -123,6 +124,9 @@ public class RobotContainer {
                 superstructure = new Superstructure(intake, new SuperstructureIO() {});
                 break;
         }
+
+        NamedCommands.registerCommand("SetIntake", SuperstructureCommands.intake(superstructure));
+        NamedCommands.registerCommand("SetIdle", SuperstructureCommands.setIdle(superstructure));
 
         // Initialize Elastic Dashboard
         elasticDashboard = new ElasticDashboard();

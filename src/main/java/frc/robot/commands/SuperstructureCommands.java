@@ -33,4 +33,14 @@ public class SuperstructureCommands {
                 .finallyDo(() -> superstructure.setGoal(Goal.IDLE))
                 .withName("IntakeUntilReady");
     }
+
+    // Set superstructure state to INTAKING without a return to idle
+    public static Command setIntake(Superstructure superstructure) {
+        return Commands.runOnce(() -> superstructure.setGoal(Goal.INTAKING)).withName("SetIntake");
+    }
+
+    // Set superstructure state to IDLE
+    public static Command setIdle(Superstructure superstructure) {
+        return Commands.runOnce(() -> superstructure.setGoal(Goal.IDLE)).withName("SetIdle");
+    }
 }
