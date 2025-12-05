@@ -70,6 +70,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         var driveConfig = constants.DriveMotorInitialConfigs;
         driveConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         driveConfig.Slot0 = constants.DriveMotorGains;
+        driveConfig.Feedback.SensorToMechanismRatio = constants.DriveMotorGearRatio;
         driveConfig.TorqueCurrent.PeakForwardTorqueCurrent = constants.SlipCurrent;
         driveConfig.TorqueCurrent.PeakReverseTorqueCurrent = -constants.SlipCurrent;
         driveConfig.CurrentLimits.StatorCurrentLimit = constants.SlipCurrent;
@@ -142,10 +143,8 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
 
         // Update drive inputs
         inputs.driveConnected = driveConnectedDebounce.calculate(driveStatus.isOK());
-        inputs.drivePositionRad =
-                Units.rotationsToRadians(drivePosition.getValueAsDouble()) / constants.DriveMotorGearRatio;
-        inputs.driveVelocityRadPerSec =
-                Units.rotationsToRadians(driveVelocity.getValueAsDouble()) / constants.DriveMotorGearRatio;
+        inputs.drivePositionRad = Units.rotationsToRadians(drivePosition.getValueAsDouble());
+        inputs.driveVelocityRadPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
         inputs.driveAppliedVolts = driveAppliedVolts.getValueAsDouble();
         inputs.driveCurrentAmps = driveCurrent.getValueAsDouble();
 
@@ -177,13 +176,19 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     }
 
     @Override
-    public void setDriveVelocity(double wheelVelocityRadPerSec) {
-        double motorVelocityRotPerSec =
-                Units.radiansToRotations(wheelVelocityRadPerSec) * constants.DriveMotorGearRatio;
+    public void setDriveVelocity(double velocityRadPerSec) {
+        double velocityRotPerSec = Units.radiansToRotations(velocityRadPerSec);
+
+        // Apply coupling compensation (254 style): add back the drive velocity caused by azimuth rotation
+        // so the wheel achieves the actual requested velocity
+        double azimuthVelocityRps = turnVelocity.getValueAsDouble() / constants.SteerMotorGearRatio;
+        double driveBackoutRps = azimuthVelocityRps * constants.CouplingGearRatio / constants.DriveMotorGearRatio;
+        velocityRotPerSec += driveBackoutRps;
+
         driveTalon.setControl(
                 switch (constants.DriveMotorClosedLoopOutput) {
-                    case Voltage -> velocityVoltageRequest.withVelocity(motorVelocityRotPerSec);
-                    case TorqueCurrentFOC -> velocityTorqueCurrentRequest.withVelocity(motorVelocityRotPerSec);
+                    case Voltage -> velocityVoltageRequest.withVelocity(velocityRotPerSec);
+                    case TorqueCurrentFOC -> velocityTorqueCurrentRequest.withVelocity(velocityRotPerSec);
                 });
     }
 

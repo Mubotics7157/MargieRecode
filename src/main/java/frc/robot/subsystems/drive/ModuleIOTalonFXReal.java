@@ -42,14 +42,34 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
     public void updateInputs(ModuleIOInputs inputs) {
         super.updateInputs(inputs);
 
+        // Apply coupling compensation to main drive position
+        // When azimuth rotates, the drive encoder sees phantom movement
+        double couplingRatio = constants.CouplingGearRatio;
+        double driveGearRatio = constants.DriveMotorGearRatio;
+        double turnRotations = inputs.turnAbsolutePosition.getRotations();
+        double couplingCorrectionRad = Units.rotationsToRadians(turnRotations * couplingRatio / driveGearRatio);
+        inputs.drivePositionRad -= couplingCorrectionRad;
+
         // Update odometry inputs
         inputs.odometryTimestamps =
                 timestampQueue.stream().mapToDouble((Double value) -> value).toArray();
-        inputs.odometryDrivePositionsRad = drivePositionQueue.stream()
-                .mapToDouble(Units::rotationsToRadians)
-                .toArray();
-        inputs.odometryTurnPositions =
-                turnPositionQueue.stream().map(Rotation2d::fromRotations).toArray(Rotation2d[]::new);
+
+        // Get raw positions from queues
+        double[] rawDrivePositions = drivePositionQueue.stream().mapToDouble(Double::doubleValue).toArray();
+        double[] rawTurnPositions = turnPositionQueue.stream().mapToDouble(Double::doubleValue).toArray();
+
+        // Apply coupling compensation to odometry samples
+        inputs.odometryDrivePositionsRad = new double[rawDrivePositions.length];
+        for (int i = 0; i < rawDrivePositions.length; i++) {
+            double couplingCorrection = rawTurnPositions[i] * couplingRatio / driveGearRatio;
+            inputs.odometryDrivePositionsRad[i] = Units.rotationsToRadians(rawDrivePositions[i] - couplingCorrection);
+        }
+
+        inputs.odometryTurnPositions = new Rotation2d[rawTurnPositions.length];
+        for (int i = 0; i < rawTurnPositions.length; i++) {
+            inputs.odometryTurnPositions[i] = Rotation2d.fromRotations(rawTurnPositions[i]);
+        }
+
         timestampQueue.clear();
         drivePositionQueue.clear();
         turnPositionQueue.clear();
