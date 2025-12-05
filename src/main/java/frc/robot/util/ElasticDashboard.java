@@ -181,7 +181,7 @@ public class ElasticDashboard {
     private void setupVisionTab() {
         // Camera 0 stream
         camera0StreamEntry = visionTab
-                .add("Camera 0", "mjpg:http://limelight-camera0.local:5800")
+                .add("Camera 0", "mjpg:http://limelight-dihlite.local:5800")
                 .withWidget(BuiltInWidgets.kCameraStream)
                 .withSize(5, 4)
                 .withPosition(0, 0)
@@ -189,7 +189,7 @@ public class ElasticDashboard {
 
         // Camera 1 stream
         camera1StreamEntry = visionTab
-                .add("Camera 1", "mjpg:http://limelight-camera1.local:5800")
+                .add("Camera 1", "mjpg:http://limelight-dihlite.local:5800")
                 .withWidget(BuiltInWidgets.kCameraStream)
                 .withSize(5, 4)
                 .withPosition(5, 0)
