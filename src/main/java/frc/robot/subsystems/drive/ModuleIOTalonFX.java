@@ -178,6 +178,13 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     @Override
     public void setDriveVelocity(double velocityRadPerSec) {
         double velocityRotPerSec = Units.radiansToRotations(velocityRadPerSec);
+
+        // Apply coupling compensation (254 style): add back the drive velocity caused by azimuth rotation
+        // so the wheel achieves the actual requested velocity
+        double azimuthVelocityRps = turnVelocity.getValueAsDouble() / constants.SteerMotorGearRatio;
+        double driveBackoutRps = azimuthVelocityRps * constants.CouplingGearRatio / constants.DriveMotorGearRatio;
+        velocityRotPerSec += driveBackoutRps;
+
         driveTalon.setControl(
                 switch (constants.DriveMotorClosedLoopOutput) {
                     case Voltage -> velocityVoltageRequest.withVelocity(velocityRotPerSec);
