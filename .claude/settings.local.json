@@ -10,7 +10,8 @@
       "Bash(cmd /c:*)",
       "Read(//c/Users/Public/wpilib/2025/**)",
       "Bash('C:\\Users\\Public\\wpilib\\2025\\jdk\\bin\\java.exe' -version)",
-      "Bash('C:\\Users\\Public\\wpilib\\2025\\jdk\\bin\\java.exe' -Dfile.encoding=UTF-8 -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain build)"
+      "Bash('C:\\Users\\Public\\wpilib\\2025\\jdk\\bin\\java.exe' -Dfile.encoding=UTF-8 -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain build)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
