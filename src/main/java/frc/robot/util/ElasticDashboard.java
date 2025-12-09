@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.superstructure.Superstructure;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class ElasticDashboard {
     private GenericEntry driveRotationEntry;
     private GenericEntry gyroYawEntry;
 
-    // Mechanism tab widgets
+    // Mechanism tab widgets - Intake
     private GenericEntry armCurrentEntry;
     private GenericEntry armVoltageEntry;
     private GenericEntry armPositionEntry;
@@ -58,6 +59,20 @@ public class ElasticDashboard {
     private GenericEntry indexerVoltageEntry;
     private GenericEntry indexerPositionEntry;
     private GenericEntry indexerVelocityEntry;
+    private GenericEntry ballDetectedEntry;
+
+    // Mechanism tab widgets - Shooter
+    private GenericEntry shooterVelocityEntry;
+    private GenericEntry shooterTargetVelocityEntry;
+    private GenericEntry shooterAtSetpointEntry;
+    private GenericEntry shooterEnabledEntry;
+    private GenericEntry hoodPositionEntry;
+    private GenericEntry hoodTargetPositionEntry;
+    private GenericEntry hoodAtSetpointEntry;
+    private GenericEntry topLeftRPMEntry;
+    private GenericEntry topRightRPMEntry;
+    private GenericEntry bottomLeftRPMEntry;
+    private GenericEntry bottomRightRPMEntry;
 
     // Vision tab widgets (placeholders for camera streams)
     private GenericEntry camera0StreamEntry;
@@ -170,10 +185,35 @@ public class ElasticDashboard {
                 .withWidget(BuiltInWidgets.kNumberBar)
                 .withProperties(Map.of("min", -100, "max", 100));
 
+        intakeSummary
+                .add("Ball Detected", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "gray"));
+
+        // Shooter Status on main tab
+        ShuffleboardLayout shooterStatus = mainTab.getLayout("Shooter Status", BuiltInLayouts.kList)
+                .withSize(2, 3)
+                .withPosition(0, 3);
+
+        shooterStatus
+                .add("Ready to Shoot", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "red"));
+
+        shooterStatus
+                .add("Shooter RPM", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000));
+
+        shooterStatus
+                .add("Hood Angle", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 45));
+
         // Swerve module visualization
         ShuffleboardLayout moduleLayout = mainTab.getLayout("Swerve Modules", BuiltInLayouts.kGrid)
                 .withSize(4, 2)
-                .withPosition(6, 3)
+                .withPosition(10, 3)
                 .withProperties(Map.of("Number of columns", 2, "Number of rows", 2));
     }
 
@@ -274,10 +314,85 @@ public class ElasticDashboard {
         indexerVelocityEntry = IndexerValues.add("Indexer Velocity (Rad/s)", 0.0)
                 .withWidget(BuiltInWidgets.kTextView)
                 .getEntry();
+
+        ballDetectedEntry = IndexerValues.add("Ball Detected", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "gray"))
+                .getEntry();
+
+        // Shooter Main Values
+        ShuffleboardLayout ShooterValues = mechanismTab
+                .getLayout("Shooter", BuiltInLayouts.kList)
+                .withSize(2, 4)
+                .withPosition(6, 0);
+
+        shooterVelocityEntry = ShooterValues.add("Current Velocity (RPM)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        shooterTargetVelocityEntry = ShooterValues.add("Target Velocity (RPM)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        shooterAtSetpointEntry = ShooterValues.add("At Setpoint", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "red"))
+                .getEntry();
+
+        shooterEnabledEntry = ShooterValues.add("Shooter Enabled", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "gray"))
+                .getEntry();
+
+        // Shooter Hood Values
+        ShuffleboardLayout HoodValues = mechanismTab
+                .getLayout("Hood", BuiltInLayouts.kList)
+                .withSize(2, 3)
+                .withPosition(8, 0);
+
+        hoodPositionEntry = HoodValues.add("Hood Position (deg)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        hoodTargetPositionEntry = HoodValues.add("Target Position (deg)", 0.0)
+                .withWidget(BuiltInWidgets.kTextView)
+                .getEntry();
+
+        hoodAtSetpointEntry = HoodValues.add("Hood At Setpoint", false)
+                .withWidget(BuiltInWidgets.kBooleanBox)
+                .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "red"))
+                .getEntry();
+
+        // Individual Roller Speeds
+        ShuffleboardLayout RollerSpeeds = mechanismTab
+                .getLayout("Roller Speeds", BuiltInLayouts.kGrid)
+                .withSize(2, 2)
+                .withPosition(10, 0)
+                .withProperties(Map.of("Number of columns", 2, "Number of rows", 2));
+
+        topLeftRPMEntry = RollerSpeeds.add("Top Left", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        topRightRPMEntry = RollerSpeeds.add("Top Right", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        bottomLeftRPMEntry = RollerSpeeds.add("Bottom Left", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        bottomRightRPMEntry = RollerSpeeds.add("Bottom Right", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
     }
 
     // Updates all dashboard values
-    public void update(Drive drive, Superstructure superstructure, Intake intake) {
+    public void update(Drive drive, Superstructure superstructure, Intake intake, Shooter shooter) {
         // Update match time
         double matchTime = DriverStation.getMatchTime();
         matchTimeEntry.setDouble(matchTime);
@@ -305,6 +420,9 @@ public class ElasticDashboard {
 
         // Update Mechanism values
         updateMechs(intake);
+
+        // Update Shooter values
+        updateShooter(shooter);
     }
 
     // Updates superstructure state info
@@ -333,6 +451,9 @@ public class ElasticDashboard {
         indexerVoltageEntry.setDouble(intake.getIndexerVoltage());
         indexerPositionEntry.setDouble(intake.getIndexerPositionRad());
         indexerVelocityEntry.setDouble(intake.getIndexerVelocityRadPerSec());
+
+        // Update ball detection
+        ballDetectedEntry.setBoolean(intake.isBallDetected());
     }
 
     // Updates drive info
@@ -361,5 +482,25 @@ public class ElasticDashboard {
     public void setCameraStreams(String camera0Url, String camera1Url) {
         camera0StreamEntry.setString(camera0Url);
         camera1StreamEntry.setString(camera1Url);
+    }
+
+    // Updates shooter info
+    private void updateShooter(Shooter shooter) {
+        // Get the shooter inputs through the public methods
+        shooterVelocityEntry.setDouble(shooter.getVelocityRPM());
+        shooterTargetVelocityEntry.setDouble(shooter.getTargetVelocity());
+        shooterAtSetpointEntry.setBoolean(shooter.atSetpoint());
+        shooterEnabledEntry.setBoolean(shooter.isEnabled());
+
+        // Hood values
+        hoodPositionEntry.setDouble(shooter.getHoodAngle());
+        hoodTargetPositionEntry.setDouble(shooter.getTargetHoodAngle());
+        hoodAtSetpointEntry.setBoolean(shooter.isHoodAtSetpoint());
+
+        // Individual roller speeds - need to add getters in Shooter
+        topLeftRPMEntry.setDouble(shooter.getTopLeftRPM());
+        topRightRPMEntry.setDouble(shooter.getTopRightRPM());
+        bottomLeftRPMEntry.setDouble(shooter.getBottomLeftRPM());
+        bottomRightRPMEntry.setDouble(shooter.getBottomRightRPM());
     }
 }
