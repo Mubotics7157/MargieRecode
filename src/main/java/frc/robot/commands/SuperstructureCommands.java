@@ -2,6 +2,7 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.Goal;
 
@@ -42,5 +43,50 @@ public class SuperstructureCommands {
     // Set superstructure state to IDLE
     public static Command setIdle(Superstructure superstructure) {
         return Commands.runOnce(() -> superstructure.setGoal(Goal.IDLE)).withName("SetIdle");
+    }
+
+    // Shoot command - spins up shooter, waits for speed, then feeds ball
+    public static Command shoot(Superstructure superstructure, Shooter shooter) {
+        return Commands.sequence(
+                        // Spin up the shooter
+                        Commands.runOnce(() -> {
+                            shooter.setTargetVelocity(4000); // 4000 RPM target
+                            shooter.enable();
+                        }),
+                        // Wait for shooter to reach speed
+                        Commands.waitUntil(shooter::atSetpoint).withTimeout(2.0),
+                        // Feed the ball
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.SHOOTING)),
+                        // Keep feeding for 0.5 seconds
+                        Commands.waitSeconds(0.5),
+                        // Return to idle
+                        Commands.runOnce(() -> {
+                            superstructure.setGoal(Goal.IDLE);
+                            shooter.disable();
+                        }))
+                .withName("Shoot");
+    }
+
+    // Auto intake command - intakes until ball is detected
+    public static Command autoIntake(Superstructure superstructure) {
+        return Commands.sequence(
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.INTAKING)),
+                        Commands.waitUntil(superstructure::hasBall).withTimeout(3.0),
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.IDLE)))
+                .withName("AutoIntake");
+    }
+
+    // Prepare to shoot command - spins up shooter but doesn't feed
+    public static Command prepareShooter(Shooter shooter) {
+        return Commands.runOnce(() -> {
+                    shooter.setTargetVelocity(4000); // 4000 RPM target
+                    shooter.enable();
+                })
+                .withName("PrepareShooter");
+    }
+
+    // Stop shooter command
+    public static Command stopShooter(Shooter shooter) {
+        return Commands.runOnce(shooter::disable).withName("StopShooter");
     }
 }

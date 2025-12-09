@@ -9,6 +9,7 @@ public class Superstructure extends SubsystemBase {
     public enum Goal {
         IDLE,
         INTAKING,
+        SHOOTING,
         OUTTAKING;
     }
 
@@ -44,14 +45,28 @@ public class Superstructure extends SubsystemBase {
             case IDLE:
                 intake.stowArm();
                 intake.setRollerDutyCycle(0.0);
+                intake.setIndexerDutyCycle(0.0);
                 break;
             case INTAKING:
                 intake.deployArm();
                 intake.setRollerDutyCycle(0.5);
+                // If ball detected, hold it in the indexer
+                if (intake.isBallDetected()) {
+                    intake.holdBall();
+                } else {
+                    intake.setIndexerDutyCycle(0.5);
+                }
+                break;
+            case SHOOTING:
+                intake.stowArm();
+                intake.setRollerDutyCycle(0.0);
+                // Feed ball to shooter
+                intake.feedToShooter();
                 break;
             case OUTTAKING:
                 intake.deployArm();
                 intake.setRollerDutyCycle(-0.5);
+                intake.setIndexerDutyCycle(-0.5);
                 break;
         }
     }
@@ -86,6 +101,11 @@ public class Superstructure extends SubsystemBase {
         return switch (currentGoal) {
             case IDLE -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
             case INTAKING, OUTTAKING -> intake.isArmAtPosition(Intake.ARM_DEPLOYED_POSITION, 0.1);
+            case SHOOTING -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
         };
+    }
+
+    public boolean hasBall() {
+        return intake.isBallDetected();
     }
 }
