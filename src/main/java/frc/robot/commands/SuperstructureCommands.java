@@ -45,16 +45,16 @@ public class SuperstructureCommands {
         return Commands.runOnce(() -> superstructure.setGoal(Goal.IDLE)).withName("SetIdle");
     }
 
-    // Shoot command - spins up shooter, waits for speed, then feeds ball
+    // Shoot command - spins up shooter, waits for speed and hood, then feeds ball
     public static Command shoot(Superstructure superstructure, Shooter shooter) {
         return Commands.sequence(
-                        // Spin up the shooter
+                        // Configure and enable the shooter
                         Commands.runOnce(() -> {
-                            shooter.setTargetVelocity(4000); // 4000 RPM target
+                            shooter.configureSpeakerShot();
                             shooter.enable();
                         }),
-                        // Wait for shooter to reach speed
-                        Commands.waitUntil(shooter::atSetpoint).withTimeout(2.0),
+                        // Wait for shooter and hood to reach setpoints
+                        Commands.waitUntil(shooter::isReadyToShoot).withTimeout(2.0),
                         // Feed the ball
                         Commands.runOnce(() -> superstructure.setGoal(Goal.SHOOTING)),
                         // Keep feeding for 0.5 seconds
@@ -79,7 +79,7 @@ public class SuperstructureCommands {
     // Prepare to shoot command - spins up shooter but doesn't feed
     public static Command prepareShooter(Shooter shooter) {
         return Commands.runOnce(() -> {
-                    shooter.setTargetVelocity(4000); // 4000 RPM target
+                    shooter.configureSpeakerShot();
                     shooter.enable();
                 })
                 .withName("PrepareShooter");
@@ -88,5 +88,57 @@ public class SuperstructureCommands {
     // Stop shooter command
     public static Command stopShooter(Shooter shooter) {
         return Commands.runOnce(shooter::disable).withName("StopShooter");
+    }
+
+    // Amp shot command - lower velocity, higher angle
+    public static Command ampShot(Superstructure superstructure, Shooter shooter) {
+        return Commands.sequence(
+                        Commands.runOnce(() -> {
+                            shooter.configureAmpShot();
+                            shooter.enable();
+                        }),
+                        Commands.waitUntil(shooter::isReadyToShoot).withTimeout(2.0),
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.SHOOTING)),
+                        Commands.waitSeconds(0.5),
+                        Commands.runOnce(() -> {
+                            superstructure.setGoal(Goal.IDLE);
+                            shooter.disable();
+                        }))
+                .withName("AmpShot");
+    }
+
+    // Long distance shot command
+    public static Command longShot(Superstructure superstructure, Shooter shooter) {
+        return Commands.sequence(
+                        Commands.runOnce(() -> {
+                            shooter.configureLongShot();
+                            shooter.enable();
+                        }),
+                        Commands.waitUntil(shooter::isReadyToShoot).withTimeout(2.0),
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.SHOOTING)),
+                        Commands.waitSeconds(0.5),
+                        Commands.runOnce(() -> {
+                            superstructure.setGoal(Goal.IDLE);
+                            shooter.disable();
+                        }))
+                .withName("LongShot");
+    }
+
+    // Custom shot command with parameters
+    public static Command customShot(
+            Superstructure superstructure, Shooter shooter, double velocityRPM, double hoodDegrees) {
+        return Commands.sequence(
+                        Commands.runOnce(() -> {
+                            shooter.configureShot(velocityRPM, hoodDegrees);
+                            shooter.enable();
+                        }),
+                        Commands.waitUntil(shooter::isReadyToShoot).withTimeout(3.0),
+                        Commands.runOnce(() -> superstructure.setGoal(Goal.SHOOTING)),
+                        Commands.waitSeconds(0.5),
+                        Commands.runOnce(() -> {
+                            superstructure.setGoal(Goal.IDLE);
+                            shooter.disable();
+                        }))
+                .withName("CustomShot");
     }
 }
