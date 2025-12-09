@@ -82,14 +82,26 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         inputs.indexerVoltage = indexerAppliedVolts;
         inputs.indexerCurrent = indexerSim.getCurrentDrawAmps();
 
+        // Simulate ball detection
+        // Ball is detected when we're intaking and have been running for a bit
         if (!simulatedGamePiece
                 && rollerAppliedVolts > 6.0
                 && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
             simulatedGamePiece = true;
         }
 
+        // Ball is ejected when we're outtaking
         if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
             simulatedGamePiece = false;
+        }
+
+        // Ball detection based on simulated current spike
+        if (simulatedGamePiece) {
+            // Simulate higher current draw when ball is present
+            inputs.ballDetected = true;
+            inputs.ballDetectionCurrentThreshold = 15.0;
+        } else {
+            inputs.ballDetected = false;
         }
     }
 
@@ -97,8 +109,6 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     public void setRollerDutyCycle(double voltage) {
         rollerAppliedVolts = voltage;
         rollerSim.setInputVoltage(voltage);
-        indexerAppliedVolts = voltage;
-        indexerSim.setInputVoltage(voltage);
     }
 
     @Override
@@ -128,5 +138,21 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     @Override
     public void stopRoller() {
         setRollerDutyCycle(0.0);
+    }
+
+    @Override
+    public void stopArmMotor() {
+        setArmVoltage(0.0);
+    }
+
+    @Override
+    public void setIndexerDutyCycle(double value) {
+        indexerAppliedVolts = value;
+        indexerSim.setInputVoltage(value);
+    }
+
+    @Override
+    public void stopIndexer() {
+        setIndexerDutyCycle(0.0);
     }
 }
