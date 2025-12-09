@@ -31,6 +31,7 @@ import frc.robot.commands.SuperstructureCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
+import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.SuperstructureIO;
 import frc.robot.subsystems.superstructure.SuperstructureIOReal;
@@ -51,6 +52,7 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final Intake intake;
+    private final Shooter shooter;
     private final Superstructure superstructure;
 
     // Elastic Dashboard
@@ -82,6 +84,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
+                shooter = new Shooter(new ShooterIOTalonFX());
                 superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
             case SIM:
@@ -107,6 +110,7 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
+                shooter = new Shooter(new ShooterIOTalonFXSim());
                 superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
 
@@ -121,6 +125,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
+                shooter = new Shooter(new ShooterIO() {});
                 superstructure = new Superstructure(intake, new SuperstructureIO() {});
                 break;
         }
@@ -180,6 +185,9 @@ public class RobotContainer {
 
         // Eject
         controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
+
+        // Shoot
+        controller.rightTrigger().whileTrue(SuperstructureCommands.shoot(superstructure, shooter)); // right trigger
     }
 
     /**
@@ -210,7 +218,7 @@ public class RobotContainer {
     }
 
     public void updateDashboard() {
-        elasticDashboard.update(drive, superstructure, intake);
+        elasticDashboard.update(drive, superstructure, intake, shooter);
     }
 
     public ElasticDashboard getElasticDashboard() {
