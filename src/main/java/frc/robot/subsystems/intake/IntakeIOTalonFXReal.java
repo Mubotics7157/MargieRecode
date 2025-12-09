@@ -161,12 +161,15 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.indexerVelocity = Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / INDEXER_GEAR_RATIO;
         inputs.indexerVoltage = indexerAppliedVolts.getValueAsDouble();
         inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
+
+        // Ball detection based on current spike in roller or indexer motors
+        inputs.ballDetected = (inputs.rollerCurrent > inputs.ballDetectionCurrentThreshold)
+                || (inputs.indexerCurrent > inputs.ballDetectionCurrentThreshold);
     }
 
     @Override
     public void setRollerDutyCycle(double value) {
         rollerMotor.setControl(voltageRequest.withOutput(value));
-        indexerMotor.setControl(voltageRequest.withOutput(value));
     }
 
     @Override
@@ -188,10 +191,19 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     @Override
     public void stopRoller() {
         rollerMotor.stopMotor();
-        indexerMotor.stopMotor();
     }
 
     public void stopArmMotor() {
         armMotor.stopMotor();
+    }
+
+    @Override
+    public void setIndexerDutyCycle(double value) {
+        indexerMotor.setControl(voltageRequest.withOutput(value));
+    }
+
+    @Override
+    public void stopIndexer() {
+        indexerMotor.stopMotor();
     }
 }

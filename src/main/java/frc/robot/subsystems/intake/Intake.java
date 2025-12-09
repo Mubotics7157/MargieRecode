@@ -156,10 +156,37 @@ public class Intake extends SubsystemBase {
     // Stop all motors
     public void stop() {
         io.stopRoller();
+        io.stopIndexer();
     }
 
     // Stop arm
     public void stopArm() {
         io.stopArmMotor();
+    }
+
+    // Indexer control methods
+    public void setIndexerDutyCycle(double value) {
+        io.setIndexerDutyCycle(value);
+    }
+
+    public void stopIndexer() {
+        io.stopIndexer();
+    }
+
+    // Ball detection
+    public boolean isBallDetected() {
+        return inputs.ballDetected;
+    }
+
+    // Hold ball in indexer (slow speed to maintain position)
+    public void holdBall() {
+        if (inputs.ballDetected) {
+            io.setIndexerDutyCycle(0.1); // Low power to hold ball
+        }
+    }
+
+    // Feed ball to shooter
+    public void feedToShooter() {
+        io.setIndexerDutyCycle(0.8); // High power to feed
     }
 }

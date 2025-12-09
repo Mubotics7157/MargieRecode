@@ -22,6 +22,10 @@ public interface IntakeIO {
         public double indexerVoltage = 0.0;
         public double indexerPosition = 0.0;
         public double indexerVelocity = 0.0;
+
+        // Ball Detection (based on motor current)
+        public boolean ballDetected = false;
+        public double ballDetectionCurrentThreshold = 15.0; // Amps
     }
 
     default void updateInputs(IntakeIOInputs inputs) {}
@@ -37,4 +41,8 @@ public interface IntakeIO {
     default void stopRoller() {}
 
     default void stopArmMotor() {}
+
+    default void setIndexerDutyCycle(double value) {}
+
+    default void stopIndexer() {}
 }
