@@ -188,6 +188,9 @@ public class RobotContainer {
 
         // Shoot
         controller.rightTrigger().whileTrue(SuperstructureCommands.shoot(superstructure, shooter)); // right trigger
+
+        //Long Shot Test
+        controller.leftTrigger().whileTrue(SuperstructureCommands.longShot(superstructure, shooter)); // left trigger
     }
 
     /**
