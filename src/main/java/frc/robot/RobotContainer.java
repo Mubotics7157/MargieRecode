@@ -84,7 +84,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
-                shooter = new Shooter(new ShooterIOTalonFX());
+                shooter = new Shooter(new ShooterIOTalonFXReal());
                 superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
                 break;
             case SIM:

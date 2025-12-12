@@ -16,7 +16,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
 
-public class ShooterIOTalonFX implements ShooterIO {
+public class ShooterIOTalonFXReal implements ShooterIO {
     // Motor CAN IDs
     private static final int TOP_LEFT_ROLLER_ID = 40;
     private static final int TOP_RIGHT_ROLLER_ID = 41;
@@ -62,7 +62,7 @@ public class ShooterIOTalonFX implements ShooterIO {
 
     private double targetHoodDegrees = 0.0;
 
-    public ShooterIOTalonFX() {
+    public ShooterIOTalonFXReal() {
         // Initialize roller motors
         topLeftRoller = new TalonFX(TOP_LEFT_ROLLER_ID, "rio");
         topRightRoller = new TalonFX(TOP_RIGHT_ROLLER_ID, "rio");
