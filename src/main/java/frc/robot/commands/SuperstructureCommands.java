@@ -126,10 +126,14 @@ public class SuperstructureCommands {
 
     // Custom shot command with parameters
     public static Command customShot(
-            Superstructure superstructure, Shooter shooter, double velocityRPM, double hoodDegrees) {
+            Superstructure superstructure,
+            Shooter shooter,
+            double flywheelRPM,
+            double flywheel2InRPM,
+            double hoodDegrees) {
         return Commands.sequence(
                         Commands.runOnce(() -> {
-                            shooter.configureShot(velocityRPM, hoodDegrees);
+                            shooter.configureShot(flywheelRPM, flywheel2InRPM, hoodDegrees);
                             shooter.enable();
                         }),
                         Commands.waitUntil(shooter::isReadyToShoot).withTimeout(3.0),

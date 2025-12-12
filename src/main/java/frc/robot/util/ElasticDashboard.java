@@ -69,10 +69,11 @@ public class ElasticDashboard {
     private GenericEntry hoodPositionEntry;
     private GenericEntry hoodTargetPositionEntry;
     private GenericEntry hoodAtSetpointEntry;
-    private GenericEntry topLeftRPMEntry;
-    private GenericEntry topRightRPMEntry;
-    private GenericEntry bottomLeftRPMEntry;
-    private GenericEntry bottomRightRPMEntry;
+    private GenericEntry flywheelMidRPMEntry;
+    private GenericEntry flywheelRightRPMEntry;
+    private GenericEntry flywheel2InRPMEntry;
+    private GenericEntry shooterMotorRPMEntry;
+    private GenericEntry pooperRPMEntry;
 
     // Vision tab widgets (placeholders for camera streams)
     private GenericEntry camera0StreamEntry;
@@ -363,31 +364,41 @@ public class ElasticDashboard {
                 .withProperties(Map.of("colorWhenTrue", "green", "colorWhenFalse", "red"))
                 .getEntry();
 
-        // Individual Roller Speeds
-        ShuffleboardLayout RollerSpeeds = mechanismTab
-                .getLayout("Roller Speeds", BuiltInLayouts.kGrid)
+        // Flywheel Speeds
+        ShuffleboardLayout FlywheelSpeeds = mechanismTab
+                .getLayout("Flywheel Speeds", BuiltInLayouts.kList)
+                .withSize(2, 3)
+                .withPosition(10, 0);
+
+        flywheelMidRPMEntry = FlywheelSpeeds.add("Flywheel Mid", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        flywheelRightRPMEntry = FlywheelSpeeds.add("Flywheel Right", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        flywheel2InRPMEntry = FlywheelSpeeds.add("2in Flywheel", 0.0)
+                .withWidget(BuiltInWidgets.kNumberBar)
+                .withProperties(Map.of("min", 0, "max", 6000))
+                .getEntry();
+
+        // Indexer Speeds
+        ShuffleboardLayout IndexerSpeeds = mechanismTab
+                .getLayout("Indexer Speeds", BuiltInLayouts.kList)
                 .withSize(2, 2)
-                .withPosition(10, 0)
-                .withProperties(Map.of("Number of columns", 2, "Number of rows", 2));
+                .withPosition(10, 3);
 
-        topLeftRPMEntry = RollerSpeeds.add("Top Left", 0.0)
+        shooterMotorRPMEntry = IndexerSpeeds.add("Shooter Motor", 0.0)
                 .withWidget(BuiltInWidgets.kNumberBar)
-                .withProperties(Map.of("min", 0, "max", 6000))
+                .withProperties(Map.of("min", -6000, "max", 6000))
                 .getEntry();
 
-        topRightRPMEntry = RollerSpeeds.add("Top Right", 0.0)
+        pooperRPMEntry = IndexerSpeeds.add("Pooper", 0.0)
                 .withWidget(BuiltInWidgets.kNumberBar)
-                .withProperties(Map.of("min", 0, "max", 6000))
-                .getEntry();
-
-        bottomLeftRPMEntry = RollerSpeeds.add("Bottom Left", 0.0)
-                .withWidget(BuiltInWidgets.kNumberBar)
-                .withProperties(Map.of("min", 0, "max", 6000))
-                .getEntry();
-
-        bottomRightRPMEntry = RollerSpeeds.add("Bottom Right", 0.0)
-                .withWidget(BuiltInWidgets.kNumberBar)
-                .withProperties(Map.of("min", 0, "max", 6000))
+                .withProperties(Map.of("min", -6000, "max", 6000))
                 .getEntry();
     }
 
@@ -487,9 +498,9 @@ public class ElasticDashboard {
     // Updates shooter info
     private void updateShooter(Shooter shooter) {
         // Get the shooter inputs through the public methods
-        shooterVelocityEntry.setDouble(shooter.getVelocityRPM());
-        shooterTargetVelocityEntry.setDouble(shooter.getTargetVelocity());
-        shooterAtSetpointEntry.setBoolean(shooter.atSetpoint());
+        shooterVelocityEntry.setDouble(shooter.getFlywheelRPM());
+        shooterTargetVelocityEntry.setDouble(shooter.getTargetFlywheelRPM());
+        shooterAtSetpointEntry.setBoolean(shooter.flywheelAtSetpoint());
         shooterEnabledEntry.setBoolean(shooter.isEnabled());
 
         // Hood values
@@ -497,10 +508,13 @@ public class ElasticDashboard {
         hoodTargetPositionEntry.setDouble(shooter.getTargetHoodAngle());
         hoodAtSetpointEntry.setBoolean(shooter.isHoodAtSetpoint());
 
-        // Individual roller speeds - need to add getters in Shooter
-        topLeftRPMEntry.setDouble(shooter.getTopLeftRPM());
-        topRightRPMEntry.setDouble(shooter.getTopRightRPM());
-        bottomLeftRPMEntry.setDouble(shooter.getBottomLeftRPM());
-        bottomRightRPMEntry.setDouble(shooter.getBottomRightRPM());
+        // Individual flywheel speeds
+        flywheelMidRPMEntry.setDouble(shooter.getFlywheelMidRPM());
+        flywheelRightRPMEntry.setDouble(shooter.getFlywheelRightRPM());
+        flywheel2InRPMEntry.setDouble(shooter.getFlywheel2InRPM());
+
+        // Indexer speeds
+        shooterMotorRPMEntry.setDouble(shooter.getShooterMotorRPM());
+        pooperRPMEntry.setDouble(shooter.getPooperRPM());
     }
 }

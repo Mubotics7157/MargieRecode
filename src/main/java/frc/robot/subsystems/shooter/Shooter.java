@@ -7,7 +7,8 @@ public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
-    private double targetVelocityRPM = 0.0;
+    private double targetFlywheelRPM = 0.0;
+    private double targetFlywheel2InRPM = 0.0;
     private double targetHoodAngleDegrees = 0.0;
     private boolean shooterEnabled = false;
 
@@ -21,28 +22,35 @@ public class Shooter extends SubsystemBase {
         Logger.processInputs("Shooter", inputs);
 
         // Control shooter based on enable state
-        if (shooterEnabled && targetVelocityRPM > 0) {
-            io.setVelocity(targetVelocityRPM, 12.0); // 12V feedforward
+        if (shooterEnabled && targetFlywheelRPM > 0) {
+            io.setFlywheelVelocity(targetFlywheelRPM, 12.0); // 12V feedforward
+            io.setFlywheel2InVelocity(targetFlywheel2InRPM, 12.0);
             io.setHoodPosition(targetHoodAngleDegrees);
-        } else {
-            io.stop();
+        } else if (!shooterEnabled) {
+            io.stopFlywheels();
             io.stopHood();
         }
 
         // Log shooter state
-        Logger.recordOutput("Shooter/TargetVelocityRPM", targetVelocityRPM);
+        Logger.recordOutput("Shooter/TargetFlywheelRPM", targetFlywheelRPM);
+        Logger.recordOutput("Shooter/TargetFlywheel2InRPM", targetFlywheel2InRPM);
         Logger.recordOutput("Shooter/TargetHoodAngle", targetHoodAngleDegrees);
         Logger.recordOutput("Shooter/Enabled", shooterEnabled);
-        Logger.recordOutput("Shooter/AtSetpoint", atSetpoint());
+        Logger.recordOutput("Shooter/FlywheelAtSetpoint", flywheelAtSetpoint());
         Logger.recordOutput("Shooter/HoodAtSetpoint", isHoodAtSetpoint());
     }
 
-    public void setTargetVelocity(double velocityRPM) {
-        this.targetVelocityRPM = velocityRPM;
+    // Flywheel control
+    public void setTargetFlywheelRPM(double velocityRPM) {
+        this.targetFlywheelRPM = velocityRPM;
     }
 
-    public double getTargetVelocity() {
-        return targetVelocityRPM;
+    public void setTargetFlywheel2InRPM(double velocityRPM) {
+        this.targetFlywheel2InRPM = velocityRPM;
+    }
+
+    public double getTargetFlywheelRPM() {
+        return targetFlywheelRPM;
     }
 
     public double getTargetHoodAngle() {
@@ -55,18 +63,19 @@ public class Shooter extends SubsystemBase {
 
     public void disable() {
         shooterEnabled = false;
-        targetVelocityRPM = 0.0;
+        targetFlywheelRPM = 0.0;
+        targetFlywheel2InRPM = 0.0;
     }
 
-    public boolean atSetpoint() {
-        if (!shooterEnabled || targetVelocityRPM == 0) {
+    public boolean flywheelAtSetpoint() {
+        if (!shooterEnabled || targetFlywheelRPM == 0) {
             return false;
         }
-        double error = Math.abs(inputs.velocityRPM - targetVelocityRPM);
+        double error = Math.abs(inputs.velocityRPM - targetFlywheelRPM);
         return error < 100; // Within 100 RPM
     }
 
-    public double getVelocityRPM() {
+    public double getFlywheelRPM() {
         return inputs.velocityRPM;
     }
 
@@ -87,44 +96,73 @@ public class Shooter extends SubsystemBase {
         return inputs.hoodAtSetpoint;
     }
 
+    // Indexer control (starwheels)
+    public void runIndexer(double volts) {
+        io.setIndexerVoltage(volts);
+    }
+
+    public void stopIndexer() {
+        io.stopIndexer();
+    }
+
+    // Pooper control
+    public void ejectBall() {
+        // Positive voltage = eject from robot (clockwise)
+        io.setPooperVoltage(12.0);
+    }
+
+    public void feedBall() {
+        // Negative voltage = continue through ball path (counter-clockwise)
+        io.setPooperVoltage(-12.0);
+    }
+
+    public void stopPooper() {
+        io.stopPooper();
+    }
+
     // Configure shooter for different shots
-    public void configureShot(double velocityRPM, double hoodDegrees) {
-        setTargetVelocity(velocityRPM);
+    public void configureShot(double flywheelRPM, double flywheel2InRPM, double hoodDegrees) {
+        setTargetFlywheelRPM(flywheelRPM);
+        setTargetFlywheel2InRPM(flywheel2InRPM);
         setHoodAngle(hoodDegrees);
     }
 
     // Preset shot configurations
     public void configureSpeakerShot() {
-        configureShot(4000, 35.0); // 4000 RPM, 35 degree hood angle
+        configureShot(4000, 3000, 35.0); // Hood flywheels, 2in flywheel, hood angle
     }
 
     public void configureAmpShot() {
-        configureShot(1500, 60.0); // 1500 RPM, 60 degree hood angle
+        configureShot(1500, 1200, 60.0);
     }
 
     public void configureLongShot() {
-        configureShot(5500, 25.0); // 5500 RPM, 25 degree hood angle
+        configureShot(5500, 4500, 25.0);
     }
 
-    // Check if both rollers and hood are at setpoint
+    // Check if both flywheels and hood are at setpoint
     public boolean isReadyToShoot() {
-        return atSetpoint() && isHoodAtSetpoint();
+        return flywheelAtSetpoint() && isHoodAtSetpoint();
     }
 
-    // Individual roller RPM getters for dashboard
-    public double getTopLeftRPM() {
-        return inputs.topLeftVelocityRPM;
+    // Individual motor RPM getters for dashboard
+    public double getFlywheelMidRPM() {
+        return inputs.flywheelMidVelocityRPM;
     }
 
-    public double getTopRightRPM() {
-        return inputs.topRightVelocityRPM;
+    public double getFlywheelRightRPM() {
+        return inputs.flywheelRightVelocityRPM;
     }
 
-    public double getBottomLeftRPM() {
-        return inputs.bottomLeftVelocityRPM;
+    public double getFlywheel2InRPM() {
+        return inputs.flywheel2InVelocityRPM;
     }
 
-    public double getBottomRightRPM() {
-        return inputs.bottomRightVelocityRPM;
+    public double getShooterMotorRPM() {
+        return inputs.shooterMotorVelocityRPM;
+    }
+
+    public double getPooperRPM() {
+        return inputs.pooperVelocityRPM;
     }
 }
