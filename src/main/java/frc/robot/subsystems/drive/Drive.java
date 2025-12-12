@@ -77,7 +77,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     // PathPlanner config constants
     private static final double ROBOT_MASS_KG = 30.90;
-    private static final double ROBOT_MOI = 2.25;
+    private static final double ROBOT_MOI = 3.255;
     private static final double WHEEL_COF = 1.48;
     private static final double MAX_STEER_VELOCITY_RAD_PER_SEC = 10;
     private static final RobotConfig PP_CONFIG = new RobotConfig(
