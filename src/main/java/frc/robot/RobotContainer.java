@@ -85,7 +85,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 intake = new Intake(new IntakeIOTalonFXReal());
                 shooter = new Shooter(new ShooterIOTalonFXReal());
-                superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
+                superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
                 break;
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
@@ -111,7 +111,7 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
                 shooter = new Shooter(new ShooterIOTalonFXSim());
-                superstructure = new Superstructure(intake, new SuperstructureIOReal() {});
+                superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
                 break;
 
             default:
@@ -126,7 +126,7 @@ public class RobotContainer {
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
                 shooter = new Shooter(new ShooterIO() {});
-                superstructure = new Superstructure(intake, new SuperstructureIO() {});
+                superstructure = new Superstructure(intake, shooter, new SuperstructureIO() {});
                 break;
         }
 
@@ -155,8 +155,7 @@ public class RobotContainer {
         // Configure camera streams (adjust URLs if needed)
         if (Constants.currentMode == Constants.Mode.REAL) {
             elasticDashboard.setCameraStreams(
-                    "mjpg:http://limelight-" + camera0Name + ".local:5800",
-                    "mjpg:http://limelight-" + camera1Name + ".local:5800");
+                    "mjpg:http://" + camera0Name + ".local:5800", "mjpg:http://" + camera1Name + ".local:5800");
         }
     }
 
@@ -188,9 +187,6 @@ public class RobotContainer {
 
         // Shoot
         controller.rightTrigger().whileTrue(SuperstructureCommands.shoot(superstructure, shooter)); // right trigger
-
-        // Long Shot Test
-        controller.leftTrigger().whileTrue(SuperstructureCommands.longShot(superstructure, shooter)); // left trigger
     }
 
     /**
