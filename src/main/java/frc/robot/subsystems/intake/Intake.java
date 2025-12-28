@@ -21,6 +21,12 @@ public class Intake extends SubsystemBase {
     private final Mechanism2d mechanism;
     private final MechanismLigament2d armLigament;
     private final MechanismLigament2d rollerLigament;
+    private final MechanismLigament2d indexerLigament;
+    private final MechanismLigament2d ballIndicator;
+
+    // Animation state
+    private double rollerSpinAngle = 0.0;
+    private double indexerSpinAngle = 0.0;
 
     public Intake(IntakeIO io) {
         this.io = io;
@@ -29,7 +35,7 @@ public class Intake extends SubsystemBase {
         mechanism = new Mechanism2d(3, 3);
 
         // Create root at robot center (x, y in meters)
-        MechanismRoot2d root = mechanism.getRoot("IntakeRoot", 1.5, 0.5);
+        MechanismRoot2d root = mechanism.getRoot("IntakeRoot", 1.5, 1.5);
 
         // Create arm ligament (name, length in meters, angle in degrees, line width, color)
         armLigament = root.append(new MechanismLigament2d(
@@ -39,13 +45,27 @@ public class Intake extends SubsystemBase {
                 6,
                 new Color8Bit(Color.kOrange)));
 
-        // Create roller at end of arm
+        // Create roller at end of arm (animated spinner)
         rollerLigament = armLigament.append(new MechanismLigament2d(
                 "Roller",
                 0.15, // 0.15 meter roller visualization
                 90, // Perpendicular to arm
-                4,
+                6,
                 new Color8Bit(Color.kGreen)));
+
+        // Create indexer visualization (separate from arm, in robot body)
+        MechanismRoot2d indexerRoot = mechanism.getRoot("IndexerRoot", 1.5, 1.2);
+        indexerLigament =
+                indexerRoot.append(new MechanismLigament2d("Indexer", 0.2, 0, 5, new Color8Bit(Color.kYellow)));
+
+        // Ball indicator - shows when ball is detected
+        MechanismRoot2d ballRoot = mechanism.getRoot("BallRoot", 1.5, 1.0);
+        ballIndicator = ballRoot.append(new MechanismLigament2d(
+                "Ball",
+                0.1,
+                0,
+                12, // Thicker line to look like a ball
+                new Color8Bit(Color.kGray))); // Gray when no ball
 
         SmartDashboard.putData("Intake/Mechanism", mechanism);
     }
@@ -56,8 +76,78 @@ public class Intake extends SubsystemBase {
         Logger.processInputs("Intake", inputs);
 
         // Update mechanism visualization
+        updateMechanism();
+    }
+
+    private void updateMechanism() {
+        // Update arm angle
         armLigament.setAngle(Math.toDegrees(inputs.armPosition));
-        rollerLigament.setColor(new Color8Bit(Color.kGreen));
+
+        // Animate roller based on velocity
+        double rollerRotationRate = inputs.rollerVelocity * 0.02 * (180.0 / Math.PI); // rad/s to deg per 20ms
+        rollerSpinAngle += rollerRotationRate;
+        rollerSpinAngle %= 360;
+        rollerLigament.setAngle(90 + rollerSpinAngle); // 90 is perpendicular to arm
+
+        // Animate indexer
+        double indexerRotationRate = inputs.indexerVelocity * 0.02 * (180.0 / Math.PI);
+        indexerSpinAngle += indexerRotationRate;
+        indexerSpinAngle %= 360;
+        indexerLigament.setAngle(indexerSpinAngle);
+
+        // Update roller color based on state
+        if (Math.abs(inputs.rollerVelocity) > 1.0) {
+            if (inputs.rollerVelocity > 0) {
+                // Intaking - green
+                rollerLigament.setColor(new Color8Bit(Color.kGreen));
+            } else {
+                // Outtaking - red
+                rollerLigament.setColor(new Color8Bit(Color.kRed));
+            }
+        } else {
+            // Stopped - gray
+            rollerLigament.setColor(new Color8Bit(Color.kGray));
+        }
+
+        // Update indexer color based on state
+        if (Math.abs(inputs.indexerVelocity) > 1.0) {
+            if (inputs.indexerVelocity > 0) {
+                // Feeding forward - yellow
+                indexerLigament.setColor(new Color8Bit(Color.kYellow));
+            } else {
+                // Reversing - orange
+                indexerLigament.setColor(new Color8Bit(Color.kOrange));
+            }
+        } else {
+            // Stopped - gray
+            indexerLigament.setColor(new Color8Bit(Color.kGray));
+        }
+
+        // Update ball indicator
+        if (inputs.ballDetected) {
+            // Ball detected - bright orange (game piece color)
+            ballIndicator.setColor(new Color8Bit(Color.kOrangeRed));
+            ballIndicator.setLength(0.15); // Larger when ball present
+        } else {
+            // No ball - dim gray
+            ballIndicator.setColor(new Color8Bit(Color.kDarkGray));
+            ballIndicator.setLength(0.05); // Smaller when no ball
+        }
+
+        // Update arm color based on position
+        double armError = Math.abs(inputs.armPosition - ARM_STOWED_POSITION);
+        double deployedError = Math.abs(inputs.armPosition - ARM_DEPLOYED_POSITION);
+
+        if (armError < 0.5) {
+            // At stowed position - blue
+            armLigament.setColor(new Color8Bit(Color.kBlue));
+        } else if (deployedError < 0.5) {
+            // At deployed position - green
+            armLigament.setColor(new Color8Bit(Color.kGreen));
+        } else {
+            // Moving - orange
+            armLigament.setColor(new Color8Bit(Color.kOrange));
+        }
     }
 
     // Set roller voltage (-12 to +12 volts)
@@ -176,13 +266,6 @@ public class Intake extends SubsystemBase {
     // Ball detection
     public boolean isBallDetected() {
         return inputs.ballDetected;
-    }
-
-    // Hold ball in indexer (slow speed to maintain position)
-    public void holdBall() {
-        if (inputs.ballDetected) {
-            io.setIndexerDutyCycle(0.1); // Low power to hold ball
-        }
     }
 
     // Feed ball to shooter

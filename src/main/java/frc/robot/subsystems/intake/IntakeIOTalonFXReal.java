@@ -27,7 +27,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
     private final TalonFX indexerMotor;
 
     // Control requests
-    private final DutyCycleOut voltageRequest = new DutyCycleOut(0.0);
+    private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0.0);
     private final MotionMagicExpoTorqueCurrentFOC positionRequest = new MotionMagicExpoTorqueCurrentFOC(0.0);
 
     // Status signals - Roller
@@ -169,12 +169,12 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     @Override
     public void setRollerDutyCycle(double value) {
-        rollerMotor.setControl(voltageRequest.withOutput(value));
+        rollerMotor.setControl(dutyCycleRequest.withOutput(value));
     }
 
     @Override
     public void setArmVoltage(double voltage) {
-        armMotor.setControl(voltageRequest.withOutput(voltage));
+        armMotor.setControl(dutyCycleRequest.withOutput(voltage));
     }
 
     @Override
@@ -199,7 +199,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     @Override
     public void setIndexerDutyCycle(double value) {
-        indexerMotor.setControl(voltageRequest.withOutput(value));
+        indexerMotor.setControl(dutyCycleRequest.withOutput(value));
     }
 
     @Override

@@ -15,9 +15,9 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     private static final double INDEXER_MOI = 0.001; // kg*m^2
     private static final double ARM_MOI = 0.1; // kg*m^2
 
-    // Arm position constants (radians)
-    private static final double ARM_MIN_ANGLE = 0.0;
-    private static final double ARM_MAX_ANGLE = Math.PI / 2;
+    // Arm position constants (radians) - matches Intake.java constants
+    private static final double ARM_MIN_ANGLE = -10.0; // Below deployed position (-8 rad)
+    private static final double ARM_MAX_ANGLE = 1.0; // Above stowed position (0 rad)
 
     // Motor simulations
     private final DCMotorSim rollerSim;
