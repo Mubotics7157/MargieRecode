@@ -6,11 +6,11 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.MotionMagicExpoTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
@@ -28,7 +28,7 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     private static final double ROLLER_GEAR_RATIO = 1.0; // 1:1 direct drive
     private static final double HOOD_GEAR_RATIO = 50.0; // 50:1 reduction
     private static final double MIN_HOOD_ANGLE_DEGREES = 0.0;
-    private static final double MAX_HOOD_ANGLE_DEGREES = 45.0;
+    private static final double MAX_HOOD_ANGLE_DEGREES = 65.0; // Supports amp shot at 60 degrees
 
     // Hardware
     private final TalonFX PooperMotor;
@@ -39,10 +39,9 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     private final TalonFX HoodPivot;
 
     // Control requests
-    private final VoltageOut voltageRequest = new VoltageOut(0).withEnableFOC(true);
-    private final VelocityVoltage velocityRequest = new VelocityVoltage(0).withEnableFOC(true);
-    private final MotionMagicVoltage hoodPositionRequest = new MotionMagicVoltage(0).withEnableFOC(true);
+    private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private final NeutralOut neutralRequest = new NeutralOut();
+    private final MotionMagicExpoTorqueCurrentFOC hoodPositionRequest = new MotionMagicExpoTorqueCurrentFOC(0);
 
     // Status signals for flywheel motors (main shooting)
     private final StatusSignal<edu.wpi.first.units.measure.AngularVelocity> flywheelMidVelocity;
@@ -86,23 +85,25 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         rollerConfig.CurrentLimits.StatorCurrentLimit = 80;
 
         // PID for velocity control
-        rollerConfig.Slot0.kP = 0.2;
+        rollerConfig.Slot0.kP = 10;
         rollerConfig.Slot0.kI = 0.0;
         rollerConfig.Slot0.kD = 0.0;
-        rollerConfig.Slot0.kV = 0.11; // Feedforward
+        rollerConfig.Slot0.kV = 0.0;
+        rollerConfig.Slot0.kS = 3;
 
         // Apply config to all roller motors
         tryUntilOk(5, () -> PooperMotor.getConfigurator().apply(rollerConfig, 0.25));
 
-        // Right side rollers spin opposite direction
+        rollerConfig.Slot0.kP = 70;
+        rollerConfig.Slot0.kS = 0;
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         tryUntilOk(5, () -> FlywheelMid.getConfigurator().apply(rollerConfig, 0.25));
-
         tryUntilOk(5, () -> FlywheelRight.getConfigurator().apply(rollerConfig, 0.25));
 
         rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        rollerConfig.Slot0.kP = 10;
+        rollerConfig.Slot0.kS = 3;
         tryUntilOk(5, () -> Flywheel2In.getConfigurator().apply(rollerConfig, 0.25));
-
         tryUntilOk(5, () -> ShooterMotor.getConfigurator().apply(rollerConfig, 0.25));
 
         // Configure hood motors
@@ -117,24 +118,23 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         hoodConfig.CurrentLimits.StatorCurrentLimit = 40;
 
         // Motion Magic configuration for smooth hood movement
-        hoodConfig.MotionMagic.MotionMagicCruiseVelocity = 50; // rotations per second
-        hoodConfig.MotionMagic.MotionMagicAcceleration = 100; // rotations per second squared
-        hoodConfig.MotionMagic.MotionMagicJerk = 1000; // rotations per second cubed
+        hoodConfig.MotionMagic.MotionMagicExpo_kA = 0.1;
+        hoodConfig.MotionMagic.MotionMagicExpo_kV = 0.12;
 
         // PID for position control
-        hoodConfig.Slot0.kP = 50.0;
+        hoodConfig.Slot0.kP = 20.0;
         hoodConfig.Slot0.kI = 0.0;
-        hoodConfig.Slot0.kD = 1.0;
+        hoodConfig.Slot0.kD = 2.0;
         hoodConfig.Slot0.kV = 0.0;
-        hoodConfig.Slot0.kS = 0.2; // Static feedforward to overcome friction
+        hoodConfig.Slot0.kS = 0.0;
+        hoodConfig.Slot0.kG = 3;
+        hoodConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         // Soft limits for hood
         hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-                Units.degreesToRotations(MAX_HOOD_ANGLE_DEGREES) * HOOD_GEAR_RATIO;
+        hoodConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 12;
         hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
-                Units.degreesToRotations(MIN_HOOD_ANGLE_DEGREES) * HOOD_GEAR_RATIO;
+        hoodConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 1;
 
         tryUntilOk(5, () -> HoodPivot.getConfigurator().apply(hoodConfig, 0.25));
 
@@ -212,59 +212,39 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         inputs.velocityRPM = (inputs.flywheelMidVelocityRPM + inputs.flywheelRightVelocityRPM) / 2.0;
 
         // Flywheel telemetry (from FlywheelMid as representative)
-        inputs.appliedVolts = flywheelMidVoltage.getValue().in(Volts);
-        inputs.currentAmps = flywheelMidCurrent.getValue().in(Amps);
         inputs.temperatureCelsius = flywheelMidTemp.getValue().in(Celsius);
 
         // Hood telemetry
         inputs.hoodPositionDegrees =
                 Units.rotationsToDegrees(hoodPosition.getValue().in(Rotations) / HOOD_GEAR_RATIO);
-        inputs.hoodVelocityDegreesPerSec =
-                Units.rotationsToDegrees(hoodVelocity.getValue().in(RotationsPerSecond) / HOOD_GEAR_RATIO);
-        inputs.hoodAppliedVolts = hoodVoltage.getValue().in(Volts);
-        inputs.hoodCurrentAmps = hoodCurrent.getValue().in(Amps);
         inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees) < 1.0;
     }
 
     @Override
-    public void setFlywheelVoltage(double volts) {
+    public void setFlywheelVelocity(double velocity) {
         // Controls the hood flywheels (FlywheelMid and FlywheelRight)
-        FlywheelMid.setControl(voltageRequest.withOutput(volts));
-        FlywheelRight.setControl(voltageRequest.withOutput(volts));
+        FlywheelMid.setControl(velocityRequest.withVelocity(velocity));
+        FlywheelRight.setControl(velocityRequest.withVelocity(velocity));
     }
 
     @Override
-    public void setFlywheelVelocity(double velocityRPM, double ffVolts) {
-        // Controls the hood flywheels (FlywheelMid and FlywheelRight)
-        double velocityRPS = velocityRPM / 60.0;
-        FlywheelMid.setControl(velocityRequest.withVelocity(velocityRPS).withFeedForward(ffVolts));
-        FlywheelRight.setControl(velocityRequest.withVelocity(velocityRPS).withFeedForward(ffVolts));
-    }
-
-    @Override
-    public void setFlywheel2InVoltage(double volts) {
+    public void setFlywheel2InVelocity(double velocity) {
         // Controls the 2" flywheel that feeds into hood flywheels
-        Flywheel2In.setControl(voltageRequest.withOutput(volts));
+        Flywheel2In.setControl(velocityRequest.withVelocity(velocity));
     }
 
     @Override
-    public void setFlywheel2InVelocity(double velocityRPM, double ffVolts) {
-        double velocityRPS = velocityRPM / 60.0;
-        Flywheel2In.setControl(velocityRequest.withVelocity(velocityRPS).withFeedForward(ffVolts));
-    }
-
-    @Override
-    public void setIndexerVoltage(double volts) {
+    public void setIndexerVelocity(double velocity) {
         // Controls the ShooterMotor (starwheels) for indexing
-        ShooterMotor.setControl(voltageRequest.withOutput(volts));
+        ShooterMotor.setControl(velocityRequest.withVelocity(velocity));
     }
 
     @Override
-    public void setPooperVoltage(double volts) {
+    public void setPooperVelocity(double velocity) {
         // Controls the pooper motor
         // Positive = eject from robot (clockwise)
         // Negative = continue through ball path (counter-clockwise)
-        PooperMotor.setControl(voltageRequest.withOutput(volts));
+        PooperMotor.setControl(velocityRequest.withVelocity(velocity));
     }
 
     @Override

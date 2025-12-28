@@ -505,7 +505,7 @@ public class ElasticDashboard {
 
         // Hood values
         hoodPositionEntry.setDouble(shooter.getHoodAngle());
-        hoodTargetPositionEntry.setDouble(shooter.getTargetHoodAngle());
+        hoodTargetPositionEntry.setDouble(shooter.getTargetHoodPosition());
         hoodAtSetpointEntry.setBoolean(shooter.isHoodAtSetpoint());
 
         // Individual flywheel speeds

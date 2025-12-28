@@ -15,7 +15,7 @@ public class ShooterIOTalonFXSim implements ShooterIO {
 
     // Hood position constants (degrees)
     private static final double HOOD_MIN_ANGLE = 0.0;
-    private static final double HOOD_MAX_ANGLE = 45.0;
+    private static final double HOOD_MAX_ANGLE = 65.0; // Supports amp shot at 60 degrees
 
     // Motor simulations for flywheels
     private final DCMotorSim flywheelMidSim;
@@ -119,57 +119,39 @@ public class ShooterIOTalonFXSim implements ShooterIO {
         inputs.velocityRPM = (inputs.flywheelMidVelocityRPM + inputs.flywheelRightVelocityRPM) / 2.0;
 
         // Update flywheel telemetry (use flywheelMid as representative)
-        inputs.appliedVolts = flywheelAppliedVolts;
-        inputs.currentAmps = Math.abs(flywheelMidSim.getCurrentDrawAmps())
-                + Math.abs(flywheelRightSim.getCurrentDrawAmps())
-                + Math.abs(flywheel2InSim.getCurrentDrawAmps());
         inputs.temperatureCelsius = 25.0; // Room temperature in sim
 
         // Update hood telemetry
         inputs.hoodPositionDegrees = Math.toDegrees(hoodSim.getAngularPositionRad() / HOOD_GEAR_RATIO);
-        inputs.hoodVelocityDegreesPerSec = Math.toDegrees(hoodSim.getAngularVelocityRadPerSec() / HOOD_GEAR_RATIO);
-        inputs.hoodAppliedVolts = hoodAppliedVolts;
-        inputs.hoodCurrentAmps = Math.abs(hoodSim.getCurrentDrawAmps());
 
         // Check if hood is at setpoint
         inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees) < 1.0;
     }
 
     @Override
-    public void setFlywheelVoltage(double volts) {
-        flywheelClosedLoop = false;
-        flywheelAppliedVolts = volts;
-        flywheelMidSim.setInputVoltage(volts);
-        flywheelRightSim.setInputVoltage(volts);
-    }
-
-    @Override
-    public void setFlywheelVelocity(double velocityRPM, double ffVolts) {
+    public void setFlywheelVelocity(double velocity) {
         flywheelClosedLoop = true;
-        targetFlywheelRPM = velocityRPM;
+        targetFlywheelRPM = velocity * 60.0; // Convert RPS to RPM for internal tracking
     }
 
     @Override
-    public void setFlywheel2InVoltage(double volts) {
-        flywheel2InClosedLoop = false;
-        flywheel2InAppliedVolts = volts;
-        flywheel2InSim.setInputVoltage(volts);
-    }
-
-    @Override
-    public void setFlywheel2InVelocity(double velocityRPM, double ffVolts) {
+    public void setFlywheel2InVelocity(double velocity) {
         flywheel2InClosedLoop = true;
-        targetFlywheel2InRPM = velocityRPM;
+        targetFlywheel2InRPM = velocity * 60.0; // Convert RPS to RPM for internal tracking
     }
 
     @Override
-    public void setIndexerVoltage(double volts) {
+    public void setIndexerVelocity(double velocity) {
+        // Convert velocity (RPS) to voltage for simulation
+        double volts = velocity * 60.0 * 0.0011; // Simple feedforward
         indexerAppliedVolts = volts;
         shooterMotorSim.setInputVoltage(volts);
     }
 
     @Override
-    public void setPooperVoltage(double volts) {
+    public void setPooperVelocity(double velocity) {
+        // Convert velocity (RPS) to voltage for simulation
+        double volts = velocity * 60.0 * 0.0011; // Simple feedforward
         pooperAppliedVolts = volts;
         pooperSim.setInputVoltage(volts);
     }

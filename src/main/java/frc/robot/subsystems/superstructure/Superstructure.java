@@ -2,6 +2,7 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.shooter.Shooter;
 import org.littletonrobotics.junction.Logger;
 
 public class Superstructure extends SubsystemBase {
@@ -16,13 +17,15 @@ public class Superstructure extends SubsystemBase {
     private final SuperstructureIOInputsAutoLogged inputs = new SuperstructureIOInputsAutoLogged();
 
     private final Intake intake;
+    private final Shooter shooter;
     private final SuperstructureIO io;
 
     private Goal currentGoal = Goal.IDLE;
     private Goal desiredGoal = Goal.IDLE;
 
-    public Superstructure(Intake intake, SuperstructureIO io) {
+    public Superstructure(Intake intake, Shooter shooter, SuperstructureIO io) {
         this.intake = intake;
+        this.shooter = shooter;
         this.io = io;
     }
 
@@ -46,22 +49,23 @@ public class Superstructure extends SubsystemBase {
                 intake.stowArm();
                 intake.setRollerDutyCycle(0.0);
                 intake.setIndexerDutyCycle(0.0);
+                shooter.stopIndexer();
+                shooter.stopPooper();
+                shooter.disable();
                 break;
             case INTAKING:
                 intake.deployArm();
                 intake.setRollerDutyCycle(0.5);
-                // If ball detected, hold it in the indexer
-                if (intake.isBallDetected()) {
-                    intake.holdBall();
-                } else {
-                    intake.setIndexerDutyCycle(0.5);
-                }
+                intake.setIndexerDutyCycle(0.5);
+                shooter.runIndexer(50.0); // Run starwheels to feed ball
+                shooter.feedBall(); // Run pooper to continue ball through path
                 break;
             case SHOOTING:
                 intake.stowArm();
                 intake.setRollerDutyCycle(0.0);
-                // Feed ball to shooter
                 intake.feedToShooter();
+                shooter.runIndexer(50.0); // Run starwheels to feed ball
+                shooter.feedBall(); // Run pooper to continue ball through path
                 break;
             case OUTTAKING:
                 intake.deployArm();
@@ -79,6 +83,10 @@ public class Superstructure extends SubsystemBase {
 
     public Intake getIntake() {
         return this.intake;
+    }
+
+    public Shooter getShooter() {
+        return this.shooter;
     }
 
     public Goal getCurrentGoal() {

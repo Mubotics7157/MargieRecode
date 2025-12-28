@@ -7,8 +7,6 @@ public interface ShooterIO {
     public static class ShooterIOInputs {
         // Hood flywheel motors (averaged values for main shooting)
         public double velocityRPM = 0.0;
-        public double appliedVolts = 0.0;
-        public double currentAmps = 0.0;
         public double temperatureCelsius = 0.0;
 
         // Individual flywheel velocities for debugging
@@ -22,29 +20,20 @@ public interface ShooterIO {
 
         // Hood pivot
         public double hoodPositionDegrees = 0.0;
-        public double hoodVelocityDegreesPerSec = 0.0;
-        public double hoodAppliedVolts = 0.0;
-        public double hoodCurrentAmps = 0.0;
         public boolean hoodAtSetpoint = false;
     }
 
     public default void updateInputs(ShooterIOInputs inputs) {}
 
-    // Hood flywheel control (FlywheelMid + FlywheelRight)
-    public default void setFlywheelVoltage(double volts) {}
+    public default void setFlywheelVelocity(double velocity) {}
 
-    public default void setFlywheelVelocity(double velocityRPM, double ffVolts) {}
-
-    // 2" flywheel control (feeds into hood flywheels)
-    public default void setFlywheel2InVoltage(double volts) {}
-
-    public default void setFlywheel2InVelocity(double velocityRPM, double ffVolts) {}
+    public default void setFlywheel2InVelocity(double velocity) {}
 
     // Indexer control (ShooterMotor - starwheels)
-    public default void setIndexerVoltage(double volts) {}
+    public default void setIndexerVelocity(double velocity) {}
 
     // Pooper control (positive = eject, negative = continue through path)
-    public default void setPooperVoltage(double volts) {}
+    public default void setPooperVelocity(double velocity) {}
 
     // Stop methods
     public default void stopFlywheels() {}
