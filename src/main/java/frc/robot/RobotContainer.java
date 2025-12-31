@@ -37,6 +37,7 @@ import frc.robot.subsystems.superstructure.SuperstructureIO;
 import frc.robot.subsystems.superstructure.SuperstructureIOReal;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.ElasticDashboard;
+import java.util.function.DoubleSupplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -132,6 +133,10 @@ public class RobotContainer {
 
         NamedCommands.registerCommand("SetIntake", SuperstructureCommands.intake(superstructure));
         NamedCommands.registerCommand("SetIdle", SuperstructureCommands.setIdle(superstructure));
+        NamedCommands.registerCommand("AutoIntake", SuperstructureCommands.intakeUntilReady(superstructure));
+
+        // Initialize RobotState with pose supplier for aiming calculations
+        RobotState.getInstance().setPoseSupplier(drive::getPose);
 
         // Initialize Elastic Dashboard
         elasticDashboard = new ElasticDashboard();
@@ -185,8 +190,16 @@ public class RobotContainer {
         // Eject
         controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
 
-        // Shoot
-        controller.rightTrigger().whileTrue(SuperstructureCommands.shoot(superstructure, shooter)); // right trigger
+        // Aim and Shoot - automatically rotates robot to face speaker while shooting
+        DoubleSupplier xInput = () -> -controller.getLeftY();
+        DoubleSupplier yInput = () -> -controller.getLeftX();
+        controller
+                .rightTrigger()
+                .whileTrue(SuperstructureCommands.aimAndShoot(
+                        drive, superstructure, shooter, xInput, yInput)); // right trigger
+
+        // Aim only (pre-aim without shooting) - left trigger
+        controller.leftTrigger().whileTrue(SuperstructureCommands.aimAtSpeaker(drive, xInput, yInput)); // left trigger
     }
 
     /**
