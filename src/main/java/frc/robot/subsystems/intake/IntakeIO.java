@@ -25,8 +25,10 @@ public interface IntakeIO {
 
         // Ball Detection (based on motor current)
         public boolean ballDetected = false;
-        public double ballDetectionCurrentThreshold = 15.0; // Amps
     }
+
+    // Ball detection threshold constant (Amps)
+    double BALL_DETECTION_CURRENT_THRESHOLD = 30.0;
 
     default void updateInputs(IntakeIOInputs inputs) {}
 

@@ -95,14 +95,8 @@ public class IntakeIOTalonFXSim implements IntakeIO {
             simulatedGamePiece = false;
         }
 
-        // Ball detection based on simulated current spike
-        if (simulatedGamePiece) {
-            // Simulate higher current draw when ball is present
-            inputs.ballDetected = true;
-            inputs.ballDetectionCurrentThreshold = 15.0;
-        } else {
-            inputs.ballDetected = false;
-        }
+        // Ball detection based on simulated game piece state
+        inputs.ballDetected = simulatedGamePiece;
     }
 
     @Override

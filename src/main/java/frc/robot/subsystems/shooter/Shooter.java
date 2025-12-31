@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter;
 
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
@@ -17,6 +18,13 @@ public class Shooter extends SubsystemBase {
     private double targetFlywheel2InRPM = 0.0;
     private double targetHoodPosition = 0.0;
     private boolean shooterEnabled = false;
+
+    // Ball detection via indexer current
+    private static final double BALL_DETECTION_CURRENT_THRESHOLD = 30.0; // Amps
+    private static final double BALL_DETECTION_DEBOUNCE_TIME = 0.1; // Seconds
+    private final Debouncer ballDetectionDebouncer =
+            new Debouncer(BALL_DETECTION_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+    private boolean ballDetectedInShooter = false;
 
     // Mechanism2d for visualization
     private final Mechanism2d mechanism;
@@ -82,9 +90,13 @@ public class Shooter extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Shooter", inputs);
 
+        // Ball detection debounce logic
+        ballDetectedInShooter =
+                ballDetectionDebouncer.calculate(inputs.indexerCurrentAmps >= BALL_DETECTION_CURRENT_THRESHOLD);
+
         // Control shooter based on enable state
         if (shooterEnabled && targetFlywheelRPM > 0) {
-            io.setFlywheelVelocity(targetFlywheelRPM);
+            io.setFlywheelVelocity(targetFlywheelRPM / 60);
             io.setFlywheel2InVelocity(targetFlywheel2InRPM);
             io.setHoodPosition(targetHoodPosition);
         } else if (!shooterEnabled) {
@@ -99,6 +111,9 @@ public class Shooter extends SubsystemBase {
         Logger.recordOutput("Shooter/Enabled", shooterEnabled);
         Logger.recordOutput("Shooter/FlywheelAtSetpoint", flywheelAtSetpoint());
         Logger.recordOutput("Shooter/HoodAtSetpoint", isHoodAtSetpoint());
+        Logger.recordOutput("Shooter/IndexerCurrentAmps", inputs.indexerCurrentAmps);
+        Logger.recordOutput("Shooter/BallDetectedInShooter", ballDetectedInShooter);
+        Logger.recordOutput("Shooter/FlywheelRPM", inputs.velocityRPM);
 
         // Update mechanism visualization
         updateMechanism();
@@ -212,7 +227,7 @@ public class Shooter extends SubsystemBase {
             return false;
         }
         double error = Math.abs(inputs.velocityRPM - targetFlywheelRPM);
-        return error < 1; // Within 100 RPM
+        return error < 100; // Within 100 RPM
     }
 
     public double getFlywheelRPM() {
@@ -258,6 +273,11 @@ public class Shooter extends SubsystemBase {
         io.stopPooper();
     }
 
+    // Ball detection - returns true when ball reaches starwheels (debounced)
+    public boolean isBallDetectedInShooter() {
+        return ballDetectedInShooter;
+    }
+
     // Configure shooter for different shots
     public void configureShot(double flywheelRPM, double flywheel2InRPM, double hoodPosition) {
         setTargetFlywheelRPM(flywheelRPM);
@@ -267,7 +287,7 @@ public class Shooter extends SubsystemBase {
 
     // Preset shot configurations
     public void configureTestShot() {
-        configureShot(60, 150, 5.5); // Hood flywheels, 2in flywheel, hood angle
+        configureShot(3500, 150, 5.5); // Hood flywheels, 2in flywheel, hood angle
     }
 
     // Individual motor RPM getters for dashboard

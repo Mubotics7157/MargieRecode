@@ -54,6 +54,10 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     // Status signals for indexer motors
     private final StatusSignal<edu.wpi.first.units.measure.AngularVelocity> shooterMotorVelocity;
     private final StatusSignal<edu.wpi.first.units.measure.AngularVelocity> pooperVelocity;
+    private final StatusSignal<edu.wpi.first.units.measure.Current> shooterMotorCurrent;
+
+    // Status Signals for pooper motor
+    private final StatusSignal<edu.wpi.first.units.measure.Current> pooperMotorCurrent;
 
     // Status signals for hood
     private final StatusSignal<edu.wpi.first.units.measure.Angle> hoodPosition;
@@ -79,8 +83,6 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // Current limits for rollers
-        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-        rollerConfig.CurrentLimits.SupplyCurrentLimit = 40;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         rollerConfig.CurrentLimits.StatorCurrentLimit = 80;
 
@@ -112,8 +114,6 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         hoodConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // Current limits for hood
-        hoodConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-        hoodConfig.CurrentLimits.SupplyCurrentLimit = 20;
         hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         hoodConfig.CurrentLimits.StatorCurrentLimit = 40;
 
@@ -152,12 +152,16 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         // Get status signals for indexer motors
         shooterMotorVelocity = ShooterMotor.getVelocity();
         pooperVelocity = PooperMotor.getVelocity();
+        shooterMotorCurrent = ShooterMotor.getStatorCurrent();
 
         // Get status signals for hood
         hoodPosition = HoodPivot.getPosition();
         hoodVelocity = HoodPivot.getVelocity();
         hoodVoltage = HoodPivot.getMotorVoltage();
         hoodCurrent = HoodPivot.getSupplyCurrent();
+
+        // Pooper status signals
+        pooperMotorCurrent = PooperMotor.getStatorCurrent();
 
         // Configure update frequencies
         BaseStatusSignal.setUpdateFrequencyForAll(
@@ -169,6 +173,8 @@ public class ShooterIOTalonFXReal implements ShooterIO {
                 flywheelMidCurrent,
                 flywheelMidTemp,
                 shooterMotorVelocity,
+                shooterMotorCurrent,
+                pooperMotorCurrent,
                 pooperVelocity,
                 hoodPosition,
                 hoodVelocity,
@@ -193,6 +199,8 @@ public class ShooterIOTalonFXReal implements ShooterIO {
                 flywheelMidCurrent,
                 flywheelMidTemp,
                 shooterMotorVelocity,
+                shooterMotorCurrent,
+                pooperMotorCurrent,
                 pooperVelocity,
                 hoodPosition,
                 hoodVelocity,
@@ -207,6 +215,12 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         // Indexer motor velocities
         inputs.shooterMotorVelocityRPM = shooterMotorVelocity.getValue().in(RotationsPerSecond) * 60.0;
         inputs.pooperVelocityRPM = pooperVelocity.getValue().in(RotationsPerSecond) * 60.0;
+
+        // Indexer current for ball detection
+        inputs.indexerCurrentAmps = shooterMotorCurrent.getValue().in(Amps);
+
+        // Pooper Current for ball detection
+        inputs.pooperCurrentAmps = pooperMotorCurrent.getValue().in(Amps);
 
         // Average velocity of hood flywheels for main shooting control
         inputs.velocityRPM = (inputs.flywheelMidVelocityRPM + inputs.flywheelRightVelocityRPM) / 2.0;

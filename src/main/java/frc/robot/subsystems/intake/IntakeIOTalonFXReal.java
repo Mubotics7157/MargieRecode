@@ -62,8 +62,6 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         // Current limits for roller
         rollerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        rollerConfig.CurrentLimits.SupplyCurrentLimit = 50.0;
-        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
 
@@ -75,8 +73,6 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         // Current limits for roller
         indexerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
         indexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        indexerConfig.CurrentLimits.SupplyCurrentLimit = 50.0;
-        indexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> indexerMotor.getConfigurator().apply(indexerConfig, 0.25));
 
@@ -163,8 +159,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
 
         // Ball detection based on current spike in roller or indexer motors
-        inputs.ballDetected = (inputs.rollerCurrent > inputs.ballDetectionCurrentThreshold)
-                || (inputs.indexerCurrent > inputs.ballDetectionCurrentThreshold);
+        inputs.ballDetected = (inputs.rollerCurrent > BALL_DETECTION_CURRENT_THRESHOLD)
+                || (inputs.indexerCurrent > BALL_DETECTION_CURRENT_THRESHOLD);
     }
 
     @Override

@@ -9,6 +9,9 @@ public interface ShooterIO {
         public double velocityRPM = 0.0;
         public double temperatureCelsius = 0.0;
 
+        // Pooper current for ball detection
+        public double pooperCurrentAmps = 0.0;
+
         // Individual flywheel velocities for debugging
         public double flywheelMidVelocityRPM = 0.0;
         public double flywheelRightVelocityRPM = 0.0;
@@ -17,6 +20,9 @@ public interface ShooterIO {
         // Indexer motor velocities
         public double shooterMotorVelocityRPM = 0.0; // Starwheels
         public double pooperVelocityRPM = 0.0;
+
+        // Indexer current for ball detection
+        public double indexerCurrentAmps = 0.0;
 
         // Hood pivot
         public double hoodPositionDegrees = 0.0;

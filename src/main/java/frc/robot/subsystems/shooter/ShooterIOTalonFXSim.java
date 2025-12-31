@@ -115,6 +115,9 @@ public class ShooterIOTalonFXSim implements ShooterIO {
         inputs.shooterMotorVelocityRPM = shooterMotorSim.getAngularVelocityRadPerSec() * 60.0 / (2.0 * Math.PI);
         inputs.pooperVelocityRPM = pooperSim.getAngularVelocityRadPerSec() * 60.0 / (2.0 * Math.PI);
 
+        // Simulated pooper current (approximate based on motor current draw)
+        inputs.pooperCurrentAmps = pooperSim.getCurrentDrawAmps();
+
         // Calculate average hood flywheel velocity
         inputs.velocityRPM = (inputs.flywheelMidVelocityRPM + inputs.flywheelRightVelocityRPM) / 2.0;
 

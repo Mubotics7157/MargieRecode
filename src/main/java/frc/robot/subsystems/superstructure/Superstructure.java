@@ -57,15 +57,28 @@ public class Superstructure extends SubsystemBase {
                 intake.deployArm();
                 intake.setRollerDutyCycle(0.5);
                 intake.setIndexerDutyCycle(0.5);
-                shooter.runIndexer(50.0); // Run starwheels to feed ball
-                shooter.feedBall(); // Run pooper to continue ball through path
+                // Stop indexer and pooper when ball is detected to hold it in place
+                if (shooter.isBallDetectedInShooter()) {
+                    shooter.stopIndexer();
+                    shooter.stopPooper();
+                } else {
+                    shooter.runIndexer(50.0); // Run starwheels to feed ball
+                    shooter.feedBall(); // Run pooper to continue ball through path
+                }
                 break;
             case SHOOTING:
                 intake.stowArm();
                 intake.setRollerDutyCycle(0.0);
-                intake.feedToShooter();
-                shooter.runIndexer(50.0); // Run starwheels to feed ball
-                shooter.feedBall(); // Run pooper to continue ball through path
+                // Wait for flywheels to reach target RPM before feeding ball
+                if (shooter.flywheelAtSetpoint()) {
+                    intake.feedToShooter();
+                    shooter.runIndexer(50.0); // Run starwheels to feed ball
+                    shooter.feedBall(); // Run pooper to continue ball through path
+                } else {
+                    intake.setIndexerDutyCycle(0.0);
+                    shooter.stopIndexer();
+                    shooter.stopPooper();
+                }
                 break;
             case OUTTAKING:
                 intake.deployArm();
