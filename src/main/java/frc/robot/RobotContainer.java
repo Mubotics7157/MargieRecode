@@ -190,7 +190,7 @@ public class RobotContainer {
         // Eject
         controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
 
-        // Aim and Shoot - automatically rotates robot to face speaker while shooting
+        // Aim and Shoot - automatically rotates robot to face hub while shooting
         DoubleSupplier xInput = () -> -controller.getLeftY();
         DoubleSupplier yInput = () -> -controller.getLeftX();
         controller
@@ -199,7 +199,7 @@ public class RobotContainer {
                         drive, superstructure, shooter, xInput, yInput)); // right trigger
 
         // Aim only (pre-aim without shooting) - left trigger
-        controller.leftTrigger().whileTrue(SuperstructureCommands.aimAtSpeaker(drive, xInput, yInput)); // left trigger
+        controller.leftTrigger().whileTrue(SuperstructureCommands.aimAtHub(drive, xInput, yInput)); // left trigger
     }
 
     /**

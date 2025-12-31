@@ -13,7 +13,8 @@
       "Bash('C:\\Users\\Public\\wpilib\\2025\\jdk\\bin\\java.exe' -Dfile.encoding=UTF-8 -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain build)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "Bash(JAVA_HOME=\"C:/Users/Public/wpilib/2025/jdk\" ./gradlew build:*)"
     ],
     "deny": [],
     "ask": []

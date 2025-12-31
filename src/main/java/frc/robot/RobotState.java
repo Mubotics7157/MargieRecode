@@ -5,9 +5,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.util.AimingParameters;
+import frc.robot.util.ShotParameters;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -44,28 +44,23 @@ public class RobotState {
         return poseSupplier.get();
     }
 
-    /** Returns whether the robot is on the red alliance. */
-    public boolean isRedAlliance() {
-        return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-    }
-
-    /** Calculates and returns the aiming parameters for the speaker target. */
-    public AimingParameters calculateSpeakerAimingParameters() {
+    /** Calculates and returns the aiming parameters for the hub target (center of field). */
+    public AimingParameters calculateHubAimingParameters() {
         Pose2d robotPose = getPose();
-        Translation3d speakerPos = FieldConstants.getSpeaker3d(isRedAlliance());
-        Translation2d speakerPos2d = speakerPos.toTranslation2d();
+        Translation3d hubPos = FieldConstants.getHub3d();
+        Translation2d hubPos2d = hubPos.toTranslation2d();
 
-        // Calculate vector from robot to speaker
-        Translation2d robotToSpeaker = speakerPos2d.minus(robotPose.getTranslation());
+        // Calculate vector from robot to hub
+        Translation2d robotToHub = hubPos2d.minus(robotPose.getTranslation());
 
-        // Calculate heading to face the speaker
-        Rotation2d targetHeading = robotToSpeaker.getAngle();
+        // Calculate heading to face the hub
+        Rotation2d targetHeading = robotToHub.getAngle();
 
         // Calculate horizontal distance
-        double horizontalDistance = robotToSpeaker.getNorm();
+        double horizontalDistance = robotToHub.getNorm();
 
         // Calculate effective distance (accounting for height difference)
-        double heightDifference = speakerPos.getZ() - SHOOTER_HEIGHT_METERS;
+        double heightDifference = hubPos.getZ() - SHOOTER_HEIGHT_METERS;
         double effectiveDistance =
                 Math.sqrt(horizontalDistance * horizontalDistance + heightDifference * heightDifference);
 
@@ -73,10 +68,10 @@ public class RobotState {
 
         // Log aiming data
         Logger.recordOutput("RobotState/TargetHeading", targetHeading.getDegrees());
-        Logger.recordOutput("RobotState/DistanceToSpeaker", horizontalDistance);
+        Logger.recordOutput("RobotState/DistanceToHub", horizontalDistance);
         Logger.recordOutput("RobotState/EffectiveDistance", effectiveDistance);
         Logger.recordOutput("RobotState/InRange", latestAimingParameters.inRange());
-        Logger.recordOutput("RobotState/SpeakerTarget", new Pose2d(speakerPos2d, new Rotation2d()));
+        Logger.recordOutput("RobotState/HubTarget", new Pose2d(hubPos2d, new Rotation2d()));
 
         return latestAimingParameters;
     }
@@ -96,9 +91,9 @@ public class RobotState {
                 .getDegrees();
     }
 
-    /** Returns true if the robot is currently aligned with the speaker target. */
+    /** Returns true if the robot is currently aligned with the hub target. */
     @AutoLogOutput(key = "RobotState/IsAligned")
-    public boolean isAlignedToSpeaker() {
+    public boolean isAlignedToHub() {
         return latestAimingParameters.isAligned(getPose().getRotation());
     }
 
@@ -111,6 +106,33 @@ public class RobotState {
     /** Returns true if ready to shoot (aligned and in range). */
     @AutoLogOutput(key = "RobotState/ReadyToShoot")
     public boolean isReadyToShoot() {
-        return isAlignedToSpeaker() && isInShootingRange();
+        return isAlignedToHub() && isInShootingRange();
+    }
+
+    /**
+     * Gets interpolated shot parameters based on current distance to target. Uses the shot lookup table from
+     * ShooterConstants.
+     *
+     * @return Interpolated shot parameters for current distance
+     */
+    public ShotParameters getShotParameters() {
+        double distance = latestAimingParameters.distanceToTarget();
+        ShotParameters params = ShooterConstants.getShotParameters(distance);
+
+        // Log shot parameters
+        Logger.recordOutput("RobotState/ShotFlywheelRPM", params.getFlywheelRPM());
+        Logger.recordOutput("RobotState/ShotHoodAngleDegrees", params.getHoodAngleDegrees());
+
+        return params;
+    }
+
+    /**
+     * Gets shot parameters for a specific distance. Useful for testing or manual override.
+     *
+     * @param distanceMeters The distance in meters
+     * @return Interpolated shot parameters for the given distance
+     */
+    public ShotParameters getShotParametersForDistance(double distanceMeters) {
+        return ShooterConstants.getShotParameters(distanceMeters);
     }
 }

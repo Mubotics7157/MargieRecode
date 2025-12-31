@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.ShotParameters;
 import org.littletonrobotics.junction.Logger;
 
 public class Shooter extends SubsystemBase {
@@ -219,7 +220,7 @@ public class Shooter extends SubsystemBase {
         shooterEnabled = false;
         targetFlywheelRPM = 0.0;
         targetFlywheel2InRPM = 0.0;
-        targetHoodPosition = 1;
+        targetHoodPosition = ShooterConstants.HOOD_MIN_ANGLE_DEGREES;
     }
 
     public boolean flywheelAtSetpoint() {
@@ -285,9 +286,30 @@ public class Shooter extends SubsystemBase {
         setHoodPosition(hoodPosition);
     }
 
+    /**
+     * Configures the shooter with the given shot parameters. Used for distance-based dynamic shot configuration. The 2"
+     * flywheel is set to a constant RPM defined in {@link ShooterConstants#FLYWHEEL_2IN_RPM}.
+     *
+     * @param params The shot parameters to apply
+     */
+    public void configureShot(ShotParameters params) {
+        configureShot(params.getFlywheelRPM(), ShooterConstants.FLYWHEEL_2IN_RPM, params.getHoodAngleDegrees());
+    }
+
+    /**
+     * Updates shot parameters dynamically. Call this periodically when tracking a target.
+     *
+     * @param params The interpolated shot parameters based on current distance
+     */
+    public void updateShotParameters(ShotParameters params) {
+        if (shooterEnabled) {
+            configureShot(params);
+        }
+    }
+
     // Preset shot configurations
     public void configureTestShot() {
-        configureShot(3500, 150, 5.5); // Hood flywheels, 2in flywheel, hood angle
+        configureShot(ShooterConstants.getDefaultShotParameters());
     }
 
     // Individual motor RPM getters for dashboard

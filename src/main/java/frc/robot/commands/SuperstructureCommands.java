@@ -14,6 +14,7 @@ import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.Goal;
 import frc.robot.util.AimingParameters;
+import frc.robot.util.ShotParameters;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -85,7 +86,7 @@ public class SuperstructureCommands {
     }
 
     /**
-     * Aim and shoot command - automatically rotates robot to face speaker while shooting. Allows driver to control
+     * Aim and shoot command - automatically rotates robot to face hub while shooting. Allows driver to control
      * translation while heading is controlled by the aiming system. Following Team 254's convention for integrated
      * aiming.
      *
@@ -114,7 +115,11 @@ public class SuperstructureCommands {
                         () -> {
                             // Calculate aiming parameters
                             RobotState robotState = RobotState.getInstance();
-                            AimingParameters aimingParams = robotState.calculateSpeakerAimingParameters();
+                            AimingParameters aimingParams = robotState.calculateHubAimingParameters();
+
+                            // Update shot parameters based on current distance (dynamic tracking)
+                            ShotParameters shotParams = robotState.getShotParameters();
+                            shooter.updateShotParameters(shotParams);
 
                             // Get joystick inputs with deadband
                             double x = applyDeadband(xSupplier.getAsDouble(), 0.1);
@@ -156,8 +161,13 @@ public class SuperstructureCommands {
                     // Reset heading controller on command start
                     headingController.reset(drive.getRotation().getRadians());
 
-                    // Enable shooter and set shooting goal
-                    shooter.configureTestShot();
+                    // Calculate initial aiming and shot parameters
+                    RobotState robotState = RobotState.getInstance();
+                    robotState.calculateHubAimingParameters();
+                    ShotParameters initialParams = robotState.getShotParameters();
+
+                    // Configure shooter with initial distance-based parameters
+                    shooter.configureShot(initialParams);
                     shooter.enable();
                     superstructure.setGoal(Goal.SHOOTING);
                 })
@@ -169,14 +179,14 @@ public class SuperstructureCommands {
     }
 
     /**
-     * Aim at speaker command - only rotates robot to face speaker without shooting. Useful for pre-aiming before
-     * triggering the shot.
+     * Aim at hub command - only rotates robot to face hub without shooting. Useful for pre-aiming before triggering the
+     * shot.
      *
      * @param drive The drive subsystem for heading control
      * @param xSupplier Joystick X input for translation
      * @param ySupplier Joystick Y input for translation
      */
-    public static Command aimAtSpeaker(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public static Command aimAtHub(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         ProfiledPIDController headingController = new ProfiledPIDController(
                 HEADING_KP,
                 HEADING_KI,
@@ -187,7 +197,7 @@ public class SuperstructureCommands {
         return Commands.run(
                         () -> {
                             RobotState robotState = RobotState.getInstance();
-                            AimingParameters aimingParams = robotState.calculateSpeakerAimingParameters();
+                            AimingParameters aimingParams = robotState.calculateHubAimingParameters();
 
                             double x = applyDeadband(xSupplier.getAsDouble(), 0.1);
                             double y = applyDeadband(ySupplier.getAsDouble(), 0.1);
@@ -220,7 +230,7 @@ public class SuperstructureCommands {
                         drive)
                 .beforeStarting(
                         () -> headingController.reset(drive.getRotation().getRadians()))
-                .withName("AimAtSpeaker");
+                .withName("AimAtHub");
     }
 
     /** Applies a deadband to the input value. */
