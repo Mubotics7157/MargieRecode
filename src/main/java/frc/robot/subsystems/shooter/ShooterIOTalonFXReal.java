@@ -13,7 +13,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.util.Units;
 
 public class ShooterIOTalonFXReal implements ShooterIO {
     // Motor CAN IDs
@@ -26,9 +25,16 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
     // Gear ratios and constants
     private static final double ROLLER_GEAR_RATIO = 1.0; // 1:1 direct drive
-    private static final double HOOD_GEAR_RATIO = 50.0; // 50:1 reduction
-    private static final double MIN_HOOD_ANGLE_DEGREES = 0.0;
-    private static final double MAX_HOOD_ANGLE_DEGREES = 65.0; // Supports amp shot at 60 degrees
+
+    // Hood conversion: native units (0-12) correspond to exit shot angles (54-74 degrees)
+    private static final double MIN_NATIVE_UNITS = 0.0;
+    private static final double MAX_NATIVE_UNITS = 12.0;
+    private static final double MIN_EXIT_ANGLE_DEGREES = 54.0;
+    private static final double MAX_EXIT_ANGLE_DEGREES = 74.0;
+
+    // Soft limits in native units (must match config below)
+    private static final double SOFT_LIMIT_REVERSE_NATIVE = 1.0; // ~55.67 degrees
+    private static final double SOFT_LIMIT_FORWARD_NATIVE = 12.0; // 74 degrees
 
     // Hardware
     private final TalonFX PooperMotor;
@@ -65,7 +71,33 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     private final StatusSignal<edu.wpi.first.units.measure.Voltage> hoodVoltage;
     private final StatusSignal<edu.wpi.first.units.measure.Current> hoodCurrent;
 
-    private double targetHoodDegrees = 0.0;
+    private double targetHoodDegrees = MIN_EXIT_ANGLE_DEGREES;
+
+    /** Converts exit shot angle (degrees) to native motor units. */
+    private static double degreesToNative(double degrees) {
+        return (degrees - MIN_EXIT_ANGLE_DEGREES)
+                        / (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
+                        * (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
+                + MIN_NATIVE_UNITS;
+    }
+
+    /** Converts native motor units to exit shot angle (degrees). */
+    private static double nativeToDegrees(double nativeUnits) {
+        return (nativeUnits - MIN_NATIVE_UNITS)
+                        / (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
+                        * (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
+                + MIN_EXIT_ANGLE_DEGREES;
+    }
+
+    /** Returns the minimum exit angle allowed by soft limits. */
+    public static double getMinExitAngleDegrees() {
+        return nativeToDegrees(SOFT_LIMIT_REVERSE_NATIVE);
+    }
+
+    /** Returns the maximum exit angle allowed by soft limits. */
+    public static double getMaxExitAngleDegrees() {
+        return nativeToDegrees(SOFT_LIMIT_FORWARD_NATIVE);
+    }
 
     public ShooterIOTalonFXReal() {
         // Initialize roller motors
@@ -228,9 +260,9 @@ public class ShooterIOTalonFXReal implements ShooterIO {
         // Flywheel telemetry (from FlywheelMid as representative)
         inputs.temperatureCelsius = flywheelMidTemp.getValue().in(Celsius);
 
-        // Hood telemetry
-        inputs.hoodPositionDegrees =
-                Units.rotationsToDegrees(hoodPosition.getValue().in(Rotations) / HOOD_GEAR_RATIO);
+        // Hood telemetry - convert native units to exit angle degrees
+        double nativePosition = hoodPosition.getValue().in(Rotations);
+        inputs.hoodPositionDegrees = nativeToDegrees(nativePosition);
         inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees) < 1.0;
     }
 
@@ -297,9 +329,10 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
     @Override
     public void setHoodPosition(double degrees) {
-        targetHoodDegrees = Math.max(MIN_HOOD_ANGLE_DEGREES, Math.min(MAX_HOOD_ANGLE_DEGREES, degrees));
-        double motorRotations = Units.degreesToRotations(targetHoodDegrees) * HOOD_GEAR_RATIO;
-        HoodPivot.setControl(hoodPositionRequest.withPosition(motorRotations));
+        // Clamp to valid exit angle range (soft limits will also enforce this)
+        targetHoodDegrees = Math.max(getMinExitAngleDegrees(), Math.min(getMaxExitAngleDegrees(), degrees));
+        double nativePosition = degreesToNative(targetHoodDegrees);
+        HoodPivot.setControl(hoodPositionRequest.withPosition(nativePosition));
     }
 
     @Override
@@ -310,6 +343,6 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     @Override
     public void resetHoodPosition() {
         tryUntilOk(5, () -> HoodPivot.setPosition(0.0, 0.25));
-        targetHoodDegrees = 0.0;
+        targetHoodDegrees = MIN_EXIT_ANGLE_DEGREES;
     }
 }
