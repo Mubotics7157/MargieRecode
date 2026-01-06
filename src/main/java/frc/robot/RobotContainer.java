@@ -13,13 +13,13 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -39,7 +39,6 @@ import frc.robot.subsystems.vision.*;
 import frc.robot.util.ElasticDashboard;
 import java.util.function.DoubleSupplier;
 import org.ironmaple.simulation.SimulatedArena;
-import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -59,7 +58,8 @@ public class RobotContainer {
     // Elastic Dashboard
     private final ElasticDashboard elasticDashboard;
 
-    private SwerveDriveSimulation driveSimulation = null;
+    // Simulation reference (for resetting)
+    private DriveIOCTRESim driveIOSim = null;
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -68,18 +68,24 @@ public class RobotContainer {
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
+    // Robot configuration
+    private static final double ROBOT_MASS_KG = 39.0;
+    private static final double BUMPER_LENGTH_METERS = Units.inchesToMeters(32);
+    private static final double BUMPER_WIDTH_METERS = Units.inchesToMeters(32);
+    private static final double WHEEL_COF = 1.48;
+
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
         switch (Constants.currentMode) {
             case REAL:
-                // Real robot, instantiate hardware IO implementations
-                drive = new Drive(
-                        new GyroIOPigeon2(),
-                        new ModuleIOTalonFXReal(TunerConstants.FrontLeft),
-                        new ModuleIOTalonFXReal(TunerConstants.FrontRight),
-                        new ModuleIOTalonFXReal(TunerConstants.BackLeft),
-                        new ModuleIOTalonFXReal(TunerConstants.BackRight),
-                        (pose) -> {});
+                // Real robot - use CTRE SwerveDrivetrain directly
+                drive = new Drive(new DriveIOCTRE(
+                        TunerConstants.DrivetrainConstants,
+                        250.0,
+                        TunerConstants.FrontLeft,
+                        TunerConstants.FrontRight,
+                        TunerConstants.BackLeft,
+                        TunerConstants.BackRight));
                 this.vision = new Vision(
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
@@ -88,28 +94,26 @@ public class RobotContainer {
                 shooter = new Shooter(new ShooterIOTalonFXReal());
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
                 break;
-            case SIM:
-                // Sim robot, instantiate physics sim IO implementations
 
-                driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
-                SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
-                drive = new Drive(
-                        new GyroIOSim(driveSimulation.getGyroSimulation()),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.FrontLeft, driveSimulation.getModules()[0]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.FrontRight, driveSimulation.getModules()[1]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.BackLeft, driveSimulation.getModules()[2]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.BackRight, driveSimulation.getModules()[3]),
-                        driveSimulation::setSimulationWorldPose);
+            case SIM:
+                // Simulation - use CTRE SwerveDrivetrain with MapleSim
+                driveIOSim = new DriveIOCTRESim(
+                        TunerConstants.DrivetrainConstants,
+                        250.0,
+                        ROBOT_MASS_KG,
+                        BUMPER_LENGTH_METERS,
+                        BUMPER_WIDTH_METERS,
+                        WHEEL_COF,
+                        Drive.getModuleTranslations(),
+                        TunerConstants.FrontLeft,
+                        TunerConstants.FrontRight,
+                        TunerConstants.BackLeft,
+                        TunerConstants.BackRight);
+                drive = new Drive(driveIOSim);
                 vision = new Vision(
                         drive,
-                        new VisionIOPhotonVisionSim(
-                                camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
-                        new VisionIOPhotonVisionSim(
-                                camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
+                        new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
+                        new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose));
                 intake = new Intake(new IntakeIOTalonFXSim());
                 shooter = new Shooter(new ShooterIOTalonFXSim());
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
@@ -117,13 +121,7 @@ public class RobotContainer {
 
             default:
                 // Replayed robot, disable IO implementations
-                drive = new Drive(
-                        new GyroIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        (pose) -> {});
+                drive = new Drive(new DriveIO() {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new IntakeIO() {});
                 shooter = new Shooter(new ShooterIO() {});
@@ -177,10 +175,8 @@ public class RobotContainer {
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
-                ? () -> drive.setPose(
-                        driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
-                // simulation
-                : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
+                ? () -> drive.setPose(drive.getPose()) // In sim, just reset to current pose
+                : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()));
         controller.povDown().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // ============DRIVER CONTROLLER BINDINGS (SYSTEM)============//
@@ -214,15 +210,22 @@ public class RobotContainer {
     public void resetSimulationField() {
         if (Constants.currentMode != Constants.Mode.SIM) return;
 
-        driveSimulation.setSimulationWorldPose(new Pose2d(3, 3, new Rotation2d()));
+        if (driveIOSim != null && driveIOSim.getMapleSimDrivetrain() != null) {
+            driveIOSim.getMapleSimDrivetrain().setSimulationWorldPose(new Pose2d(3, 3, new Rotation2d()));
+        }
         SimulatedArena.getInstance().resetFieldForAuto();
     }
 
     public void updateSimulation() {
         if (Constants.currentMode != Constants.Mode.SIM) return;
 
-        SimulatedArena.getInstance().simulationPeriodic();
-        Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
+        // MapleSim updates are handled by the Notifier in DriveIOCTRESim
+        // Just log the simulation state here
+        if (driveIOSim != null && driveIOSim.getMapleSimDrivetrain() != null) {
+            Logger.recordOutput(
+                    "FieldSimulation/RobotPosition",
+                    driveIOSim.getMapleSimDrivetrain().getSimulatedPose());
+        }
         Logger.recordOutput(
                 "FieldSimulation/Coral", SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
         Logger.recordOutput(

@@ -123,7 +123,7 @@ public final class PhoenixUtil {
         // Skip regulation if running on a real robot
         if (RobotBase.isReal()) return moduleConstants;
 
-        // Apply simulation-specific adjustments to module constants
+        // Apply simulation-specific adjustments to module constants (based on Team 254's approach)
         return moduleConstants
                 // Disable encoder offsets
                 .withEncoderOffset(0)
@@ -132,20 +132,19 @@ public final class PhoenixUtil {
                 .withSteerMotorInverted(false)
                 // Disable CanCoder inversion
                 .withEncoderInverted(false)
-                // Adjust steer motor PID gains for simulation
+                // Adjust steer motor PID gains for simulation (Team 254 values for stability)
                 .withSteerMotorGains(new Slot0Configs()
-                        .withKP(70)
+                        .withKP(100)
                         .withKI(0)
-                        .withKD(4.5)
-                        .withKS(0)
-                        .withKV(1.91)
+                        .withKD(0.5)
+                        .withKS(0.1)
+                        .withKV(0)
                         .withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
-                .withSteerMotorGearRatio(16.0)
                 // Adjust friction voltages
-                .withDriveFrictionVoltage(Volts.of(0.1))
-                .withSteerFrictionVoltage(Volts.of(0.05))
+                .withDriveFrictionVoltage(Volts.of(0.2))
+                .withSteerFrictionVoltage(Volts.of(0.2))
                 // Adjust steer inertia
-                .withSteerInertia(KilogramSquareMeters.of(0.05));
+                .withSteerInertia(KilogramSquareMeters.of(0.01));
     }
 }
