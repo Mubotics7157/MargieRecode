@@ -13,6 +13,8 @@
 
 package frc.robot.commands;
 
+import com.ctre.phoenix6.swerve.SwerveModule;
+import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -26,13 +28,20 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.Constants;
+import frc.robot.FieldConstants;
+import frc.robot.RobotState;
+import frc.robot.lib.pathplanner.auto.AutoBuilder;
+import frc.robot.lib.pathplanner.path.PathConstraints;
 import frc.robot.subsystems.drive.Drive;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
     private static final double DEADBAND = 0.1;
@@ -125,6 +134,284 @@ public class DriveCommands {
                 // Reset PID controller when command starts
                 .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
     }
+
+    /**
+     * Field relative drive command that maintains heading when not actively turning. Based on Team 254's
+     * DriveMaintainingHeadingCommand.
+     *
+     * <p>Features:
+     *
+     * <ul>
+     *   <li>Dual mode control: Manual rotation vs heading maintenance
+     *   <li>Mode switching: 0.25s timeout after last rotation input
+     *   <li>Heading capture: Stores current heading when entering maintenance mode
+     *   <li>Cardinal snap angles: Optional snap-to-angle for common directions (0, 90, 180, 270)
+     * </ul>
+     */
+    public static Command joystickDriveMaintainHeading(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            boolean enableCardinalSnap) {
+
+        // Constants
+        final double STEER_DEADBAND = 0.1;
+        final double MODE_SWITCH_TIMEOUT_SECONDS = 0.25;
+        final double ROTATION_VELOCITY_THRESHOLD_DEG_PER_SEC = 10.0;
+        final double HEADING_KP = 5.0;
+        final double HEADING_KI = 0.0;
+        final double HEADING_KD = 0.0;
+        final double[] CARDINAL_ANGLES = {0.0, Math.PI / 2, Math.PI, -Math.PI / 2};
+        final double SNAP_THRESHOLD_RAD = Math.toRadians(15.0);
+
+        // State holder class for the command
+        class HeadingState {
+            Optional<Rotation2d> headingSetpoint = Optional.empty();
+            double joystickLastTouched = -1;
+        }
+        final HeadingState state = new HeadingState();
+
+        // Swerve requests
+        final SwerveRequest.FieldCentric driveNoHeading = new SwerveRequest.FieldCentric()
+                .withDeadband(0.05)
+                .withRotationalDeadband(STEER_DEADBAND)
+                .withDriveRequestType(
+                        Constants.currentMode == Constants.Mode.SIM
+                                ? SwerveModule.DriveRequestType.OpenLoopVoltage
+                                : SwerveModule.DriveRequestType.Velocity)
+                .withDesaturateWheelSpeeds(true)
+                .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
+
+        final SwerveRequest.FieldCentricFacingAngle driveWithHeading = new SwerveRequest.FieldCentricFacingAngle()
+                .withDeadband(0.05)
+                .withDriveRequestType(
+                        Constants.currentMode == Constants.Mode.SIM
+                                ? SwerveModule.DriveRequestType.OpenLoopVoltage
+                                : SwerveModule.DriveRequestType.Velocity)
+                .withDesaturateWheelSpeeds(true)
+                .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
+
+        // Configure heading controller PID
+        driveWithHeading.HeadingController.setPID(HEADING_KP, HEADING_KI, HEADING_KD);
+
+        final RobotState robotState = RobotState.getInstance();
+
+        return Commands.run(
+                        () -> {
+                            // Get joystick inputs
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+                            double turn = omegaSupplier.getAsDouble();
+
+                            // Scale to max speeds
+                            double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
+                            double maxAngularRate = drive.getMaxAngularSpeedRadPerSec();
+
+                            double throttle = linearVelocity.getX() * maxSpeed;
+                            double strafe = linearVelocity.getY() * maxSpeed;
+
+                            // Handle alliance flipping
+                            double throttleFieldFrame = robotState.isRedAlliance() ? -throttle : throttle;
+                            double strafeFieldFrame = robotState.isRedAlliance() ? -strafe : strafe;
+
+                            // Track when turn input was last provided
+                            if (Math.abs(turn) > STEER_DEADBAND) {
+                                state.joystickLastTouched = Timer.getFPGATimestamp();
+                            }
+
+                            // Get current rotation velocity for mode switching
+                            double currentOmegaDegPerSec =
+                                    Math.toDegrees(robotState.getMeasuredSpeedsRobotRelative().omegaRadiansPerSecond);
+
+                            // Check if within timeout
+                            boolean withinTimeout = state.joystickLastTouched >= 0
+                                    && Timer.getFPGATimestamp() - state.joystickLastTouched
+                                            < MODE_SWITCH_TIMEOUT_SECONDS;
+
+                            // Determine if we should be in manual turn mode or heading maintenance mode
+                            boolean manualTurnMode = Math.abs(turn) > STEER_DEADBAND
+                                    || (withinTimeout
+                                            && Math.abs(currentOmegaDegPerSec)
+                                                    > ROTATION_VELOCITY_THRESHOLD_DEG_PER_SEC);
+
+                            if (manualTurnMode) {
+                                // Manual turn mode - direct rotational control
+                                double turnRate = Math.copySign(turn * turn, turn) * maxAngularRate;
+
+                                drive.setControl(driveNoHeading
+                                        .withVelocityX(throttleFieldFrame)
+                                        .withVelocityY(strafeFieldFrame)
+                                        .withRotationalRate(turnRate));
+
+                                state.headingSetpoint = Optional.empty();
+                                Logger.recordOutput("DriveMaintainHeading/Mode", "Manual");
+                            } else {
+                                // Heading maintenance mode
+                                if (state.headingSetpoint.isEmpty()) {
+                                    // Capture current heading when entering maintenance mode
+                                    Rotation2d currentHeading = drive.getRotation();
+
+                                    // Optionally snap to nearest cardinal angle
+                                    if (enableCardinalSnap) {
+                                        double currentRad = currentHeading.getRadians();
+                                        Rotation2d snapped = currentHeading;
+                                        for (double cardinalRad : CARDINAL_ANGLES) {
+                                            double diff = MathUtil.angleModulus(currentRad - cardinalRad);
+                                            if (Math.abs(diff) < SNAP_THRESHOLD_RAD) {
+                                                snapped = new Rotation2d(cardinalRad);
+                                                Logger.recordOutput(
+                                                        "DriveMaintainHeading/SnappedToCardinal",
+                                                        Math.toDegrees(cardinalRad));
+                                                break;
+                                            }
+                                        }
+                                        state.headingSetpoint = Optional.of(snapped);
+                                    } else {
+                                        state.headingSetpoint = Optional.of(currentHeading);
+                                    }
+                                }
+
+                                drive.setControl(driveWithHeading
+                                        .withVelocityX(throttleFieldFrame)
+                                        .withVelocityY(strafeFieldFrame)
+                                        .withTargetDirection(state.headingSetpoint.get()));
+
+                                Logger.recordOutput("DriveMaintainHeading/Mode", "Maintaining");
+                                Logger.recordOutput(
+                                        "DriveMaintainHeading/HeadingSetpoint",
+                                        state.headingSetpoint.get().getDegrees());
+                            }
+
+                            // Log state
+                            Logger.recordOutput("DriveMaintainHeading/ThrottleFieldFrame", throttleFieldFrame);
+                            Logger.recordOutput("DriveMaintainHeading/StrafeFieldFrame", strafeFieldFrame);
+                        },
+                        drive)
+                .beforeStarting(() -> {
+                    state.headingSetpoint = Optional.empty();
+                    state.joystickLastTouched = -1;
+                });
+    }
+
+    /**
+     * Field relative drive command that maintains heading when not actively turning. Cardinal snap angles enabled by
+     * default.
+     */
+    public static Command joystickDriveMaintainHeading(
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
+        return joystickDriveMaintainHeading(drive, xSupplier, ySupplier, omegaSupplier, true);
+    }
+
+    // ==================== DYNAMIC PATHFINDING COMMANDS ====================
+
+    // Pathfinding constraints - based on Team 254's approach
+    private static final double PATHFIND_SPEED_SCALING = 0.8;
+    private static final double PATHFIND_ACCEL_SCALING = 0.8;
+    private static final double PATHFIND_ANGULAR_SCALING = 0.8;
+
+    /**
+     * Dynamically pathfind to a shooting position at the optimal distance from the hub. Based on Team 254's dynamic
+     * pathfinding approach.
+     *
+     * <p>This command uses the AD* pathfinding algorithm to navigate around obstacles and find the optimal path to a
+     * shooting position.
+     *
+     * @param drive The drive subsystem
+     * @param shootingDistanceMeters Distance from the hub center to stop at for shooting
+     * @return A command that pathfinds to the shooting position
+     */
+    public static Command pathfindToShootingPosition(Drive drive, double shootingDistanceMeters) {
+        return Commands.defer(
+                () -> {
+                    // Get current robot pose
+                    Pose2d currentPose = drive.getPose();
+                    Translation2d hubPosition = FieldConstants.getHubPosition();
+
+                    // Calculate the shooting position: on the line from hub to robot, at the desired distance
+                    Translation2d robotToHub = hubPosition.minus(currentPose.getTranslation());
+                    Rotation2d angleToHub = robotToHub.getAngle();
+
+                    // Target position is shootingDistanceMeters away from hub, facing the hub
+                    Translation2d targetTranslation =
+                            hubPosition.minus(new Translation2d(shootingDistanceMeters, angleToHub));
+                    Pose2d targetPose = new Pose2d(targetTranslation, angleToHub);
+
+                    // Create path constraints
+                    double maxSpeed = drive.getMaxLinearSpeedMetersPerSec() * PATHFIND_SPEED_SCALING;
+                    double maxAccel = 3.0 * PATHFIND_ACCEL_SCALING; // m/s^2
+                    double maxAngularSpeed = drive.getMaxAngularSpeedRadPerSec() * PATHFIND_ANGULAR_SCALING;
+                    double maxAngularAccel = Math.PI * 2 * PATHFIND_ANGULAR_SCALING; // rad/s^2
+
+                    // X and Y acceleration limits (same as max accel for symmetric constraints)
+                    PathConstraints constraints = new PathConstraints(
+                            maxSpeed, maxAccel, maxAngularSpeed, maxAngularAccel, maxAccel, maxAccel);
+
+                    Logger.recordOutput("Pathfinding/TargetPose", targetPose);
+                    Logger.recordOutput("Pathfinding/ShootingDistance", shootingDistanceMeters);
+
+                    // Use AutoBuilder to create the pathfinding command
+                    return AutoBuilder.pathfindToPoseFlipped(targetPose, constraints);
+                },
+                java.util.Set.of(drive));
+    }
+
+    /**
+     * Dynamically pathfind to a specific field pose. Based on Team 254's dynamic pathfinding approach.
+     *
+     * @param drive The drive subsystem
+     * @param targetPose The target pose to pathfind to (blue alliance origin)
+     * @return A command that pathfinds to the target pose
+     */
+    public static Command pathfindToPose(Drive drive, Pose2d targetPose) {
+        return Commands.defer(
+                () -> {
+                    double maxSpeed = drive.getMaxLinearSpeedMetersPerSec() * PATHFIND_SPEED_SCALING;
+                    double maxAccel = 3.0 * PATHFIND_ACCEL_SCALING;
+                    double maxAngularSpeed = drive.getMaxAngularSpeedRadPerSec() * PATHFIND_ANGULAR_SCALING;
+                    double maxAngularAccel = Math.PI * 2 * PATHFIND_ANGULAR_SCALING;
+
+                    PathConstraints constraints = new PathConstraints(
+                            maxSpeed, maxAccel, maxAngularSpeed, maxAngularAccel, maxAccel, maxAccel);
+
+                    Logger.recordOutput("Pathfinding/TargetPose", targetPose);
+
+                    return AutoBuilder.pathfindToPoseFlipped(targetPose, constraints);
+                },
+                java.util.Set.of(drive));
+    }
+
+    /**
+     * Dynamically pathfind to a specific field pose with custom constraints.
+     *
+     * @param drive The drive subsystem
+     * @param targetPose The target pose to pathfind to (blue alliance origin)
+     * @param maxVelocityMps Maximum velocity in meters per second
+     * @param maxAccelMpsSq Maximum acceleration in meters per second squared
+     * @return A command that pathfinds to the target pose
+     */
+    public static Command pathfindToPose(Drive drive, Pose2d targetPose, double maxVelocityMps, double maxAccelMpsSq) {
+        return Commands.defer(
+                () -> {
+                    double maxAngularSpeed = drive.getMaxAngularSpeedRadPerSec() * PATHFIND_ANGULAR_SCALING;
+                    double maxAngularAccel = Math.PI * 2 * PATHFIND_ANGULAR_SCALING;
+
+                    PathConstraints constraints = new PathConstraints(
+                            maxVelocityMps,
+                            maxAccelMpsSq,
+                            maxAngularSpeed,
+                            maxAngularAccel,
+                            maxAccelMpsSq,
+                            maxAccelMpsSq);
+
+                    Logger.recordOutput("Pathfinding/TargetPose", targetPose);
+
+                    return AutoBuilder.pathfindToPoseFlipped(targetPose, constraints);
+                },
+                java.util.Set.of(drive));
+    }
+
+    // ==================== CHARACTERIZATION COMMANDS ====================
 
     /**
      * Measures the velocity feedforward constants for the drive motors.

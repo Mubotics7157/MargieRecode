@@ -18,7 +18,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
       "Bash(JAVA_HOME=\"/Users/pmazumder/wpilib/2025/jdk\" ./gradlew build:*)",
-      "Bash(JAVA_HOME=\"/Users/pmazumder/wpilib/2025/jdk\" grep:*)"
+      "Bash(JAVA_HOME=\"/Users/pmazumder/wpilib/2025/jdk\" grep:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

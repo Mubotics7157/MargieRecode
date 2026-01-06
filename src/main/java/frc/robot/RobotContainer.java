@@ -15,8 +15,6 @@ package frc.robot;
 
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
@@ -29,6 +27,8 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.SuperstructureCommands;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.pathplanner.auto.AutoBuilder;
+import frc.robot.lib.pathplanner.auto.NamedCommands;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
 import frc.robot.subsystems.shooter.*;
@@ -169,8 +169,9 @@ public class RobotContainer {
      */
     private void configureButtonBindings() {
         // ============DRIVER CONTROLLER BINDINGS (DRIVE)============//
-        // Default command, normal field-relative drive
-        drive.setDefaultCommand(DriveCommands.joystickDrive(
+        // Default command, field-relative drive with heading maintenance
+        // Based on Team 254's DriveMaintainingHeadingCommand
+        drive.setDefaultCommand(DriveCommands.joystickDriveMaintainHeading(
                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> -controller.getRightX()));
 
         // Reset gyro / odometry

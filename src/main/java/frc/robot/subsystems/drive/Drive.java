@@ -17,13 +17,6 @@ import static edu.wpi.first.units.Units.*;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.config.ModuleConfig;
-import com.pathplanner.lib.config.PIDConstants;
-import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -37,14 +30,29 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.Threads;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.RobotState;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.pathplanner.auto.AutoBuilder;
+import frc.robot.lib.pathplanner.config.ModuleConfig;
+import frc.robot.lib.pathplanner.config.PIDConstants;
+import frc.robot.lib.pathplanner.config.RobotConfig;
+import frc.robot.lib.pathplanner.controllers.PPHolonomicDriveController;
+import frc.robot.lib.pathplanner.controllers.PathFollowingController;
+import frc.robot.lib.pathplanner.pathfinding.LocalADStar;
+import frc.robot.lib.pathplanner.pathfinding.Pathfinding;
+import frc.robot.lib.pathplanner.trajectory.PathPlannerTrajectory;
+import frc.robot.lib.pathplanner.trajectory.PathPlannerTrajectoryState;
+import frc.robot.lib.pathplanner.util.PathPlannerLogging;
 import frc.robot.subsystems.vision.Vision;
-import frc.robot.util.LocalADStarAK;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -68,18 +76,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private static final double ROBOT_MASS_KG = 39.0;
     private static final double ROBOT_MOI = 3.255;
     private static final double WHEEL_COF = 1.48;
+    private static final double COG_HEIGHT_METERS = 0.2; // Center of gravity height for traction limits
 
-    private static final RobotConfig PP_CONFIG = new RobotConfig(
-            ROBOT_MASS_KG,
-            ROBOT_MOI,
-            new ModuleConfig(
-                    TunerConstants.FrontLeft.WheelRadius,
-                    TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
-                    WHEEL_COF,
-                    DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
-                    TunerConstants.FrontLeft.SlipCurrent,
-                    1),
-            getModuleTranslations());
+    // PID constants for path following (LTE = Longitudinal Tracking Error, CTE = Cross Track Error)
+    private static final double PATH_LTE_KP = 5.0;
+    private static final double PATH_CTE_KP = 5.0;
+    private static final double PATH_THETA_KP = 5.0;
 
     // IO and inputs
     private final DriveIO io;
@@ -111,21 +113,109 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final SwerveRequest.SysIdSwerveTranslation sysIdTranslationRequest =
             new SwerveRequest.SysIdSwerveTranslation();
 
+    // Threaded path following controller (100Hz) - Based on Team 254
+    private final PathFollowingController pathController;
+    private final ThreadedPathController threadedController;
+
+    /**
+     * Threaded path following controller that runs at 100Hz. Based on Team 254's implementation for smoother autonomous
+     * paths.
+     */
+    private class ThreadedPathController implements Consumer<PathPlannerTrajectory>, Runnable {
+        private static final double PERIOD_SECONDS = 0.01; // 100Hz
+
+        private final PathFollowingController controller;
+        private final Notifier notifier;
+        private final Timer timer;
+
+        private volatile PathPlannerTrajectory trajectory = null;
+        private boolean hasSetPriority = false;
+
+        public ThreadedPathController(PathFollowingController controller) {
+            this.controller = controller;
+            this.timer = new Timer();
+            this.notifier = new Notifier(this);
+            this.notifier.startPeriodic(PERIOD_SECONDS);
+        }
+
+        @Override
+        public void accept(PathPlannerTrajectory traj) {
+            trajectory = traj;
+            timer.reset();
+            timer.start();
+            controller.reset(null, null);
+        }
+
+        @Override
+        public void run() {
+            if (!hasSetPriority) {
+                hasSetPriority = Threads.setCurrentThreadPriority(true, 41);
+            }
+
+            PathPlannerTrajectory traj = trajectory;
+            if (traj == null) return;
+
+            double now = timer.get();
+            PathPlannerTrajectoryState targetState = traj.sample(now);
+
+            ChassisSpeeds speeds = controller.calculateRobotRelativeSpeeds(
+                    RobotState.getInstance().getLatestPose(), targetState);
+
+            if (DriverStation.isEnabled()) {
+                // Apply deadband
+                if (Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) < 0.05) {
+                    speeds.vxMetersPerSecond = 0.0;
+                    speeds.vyMetersPerSecond = 0.0;
+                }
+                if (Math.abs(speeds.omegaRadiansPerSecond) < 0.05) {
+                    speeds.omegaRadiansPerSecond = 0.0;
+                }
+
+                io.setControl(applySpeedsRequest
+                        .withSpeeds(speeds)
+                        .withWheelForceFeedforwardsX(targetState.feedforwards.robotRelativeForcesXNewtons())
+                        .withWheelForceFeedforwardsY(targetState.feedforwards.robotRelativeForcesYNewtons()));
+            }
+        }
+    }
+
     public Drive(DriveIO io) {
         this.io = io;
 
-        // Configure AutoBuilder for PathPlanner
+        // Create module config for PathPlanner
+        ModuleConfig moduleConfig = new ModuleConfig(
+                TunerConstants.FrontLeft.WheelRadius,
+                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
+                WHEEL_COF,
+                DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
+                TunerConstants.FrontLeft.SlipCurrent,
+                1);
+
+        // Create robot config with COG height for traction-limited trajectory generation
+        RobotConfig robotConfig =
+                new RobotConfig(ROBOT_MASS_KG, ROBOT_MOI, moduleConfig, COG_HEIGHT_METERS, getModuleTranslations());
+
+        // Create path following controller with 3 PID controllers (LTE, CTE, Theta)
+        pathController = new PPHolonomicDriveController(
+                new PIDConstants(PATH_LTE_KP, 0.0, 0.0),
+                new PIDConstants(PATH_CTE_KP, 0.0, 0.0),
+                new PIDConstants(PATH_THETA_KP, 0.0, 0.0),
+                0.01); // 100Hz period
+
+        // Create threaded controller wrapper
+        threadedController = new ThreadedPathController(pathController);
+
+        // Configure AutoBuilder for PathPlanner using threaded controller
         AutoBuilder.configure(
                 this::getPose,
                 this::setPose,
                 this::getChassisSpeeds,
-                this::runVelocity,
-                new PPHolonomicDriveController(new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
-                PP_CONFIG,
+                threadedController,
+                robotConfig,
                 () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this);
 
-        Pathfinding.setPathfinder(new LocalADStarAK());
+        Pathfinding.setPathfinder(new LocalADStar());
         PathPlannerLogging.setLogActivePathCallback(
                 activePath -> Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0])));
         PathPlannerLogging.setLogTargetPoseCallback(
@@ -147,6 +237,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
         // Log module data
         io.logModules(null);
+
+        // Record odometry to RobotState for pose history and speed tracking
+        RobotState.getInstance().recordOdometry(Timer.getFPGATimestamp(), getPose(), getChassisSpeeds());
 
         // Stop moving when disabled
         if (DriverStation.isDisabled()) {
