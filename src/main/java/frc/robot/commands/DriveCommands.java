@@ -235,7 +235,7 @@ public class DriveCommands {
 
                             if (manualTurnMode) {
                                 // Manual turn mode - direct rotational control (no squaring, per 254)
-                                double turnRate = turn * maxAngularRate;
+                                double turnRate = Math.copySign(turn * turn, turn) * maxAngularRate;
 
                                 drive.setControl(driveNoHeading
                                         .withVelocityX(throttleFieldFrame)
