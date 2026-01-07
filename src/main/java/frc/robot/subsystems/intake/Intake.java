@@ -10,10 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
 public class Intake extends SubsystemBase {
-    // Arm position constants (radians)
-    public static final double ARM_STOWED_POSITION = 0.0;
-    public static final double ARM_DEPLOYED_POSITION = -8; // -1.62
-
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
@@ -41,7 +37,7 @@ public class Intake extends SubsystemBase {
         armLigament = root.append(new MechanismLigament2d(
                 "Arm",
                 0.5, // 0.5 meter arm length
-                Math.toDegrees(ARM_STOWED_POSITION),
+                Math.toDegrees(IntakeConstants.ARM_STOWED_POSITION),
                 6,
                 new Color8Bit(Color.kOrange)));
 
@@ -135,8 +131,8 @@ public class Intake extends SubsystemBase {
         }
 
         // Update arm color based on position
-        double armError = Math.abs(inputs.armPosition - ARM_STOWED_POSITION);
-        double deployedError = Math.abs(inputs.armPosition - ARM_DEPLOYED_POSITION);
+        double armError = Math.abs(inputs.armPosition - IntakeConstants.ARM_STOWED_POSITION);
+        double deployedError = Math.abs(inputs.armPosition - IntakeConstants.ARM_DEPLOYED_POSITION);
 
         if (armError < 0.5) {
             // At stowed position - blue
@@ -167,12 +163,12 @@ public class Intake extends SubsystemBase {
 
     // Deploy the intake arm to deployed position
     public void deployArm() {
-        io.setArmPosition(ARM_DEPLOYED_POSITION);
+        io.setArmPosition(IntakeConstants.ARM_DEPLOYED_POSITION);
     }
 
     // Stow the intake arm to stowed position
     public void stowArm() {
-        io.setArmPosition(ARM_STOWED_POSITION);
+        io.setArmPosition(IntakeConstants.ARM_STOWED_POSITION);
     }
 
     // Reset arm encoder position to zero

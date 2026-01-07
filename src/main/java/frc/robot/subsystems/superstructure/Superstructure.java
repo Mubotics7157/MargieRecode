@@ -2,6 +2,7 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.shooter.Shooter;
 import org.littletonrobotics.junction.Logger;
 
@@ -120,9 +121,9 @@ public class Superstructure extends SubsystemBase {
         }
 
         return switch (currentGoal) {
-            case IDLE -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
-            case INTAKING, OUTTAKING -> intake.isArmAtPosition(Intake.ARM_DEPLOYED_POSITION, 0.1);
-            case SHOOTING -> intake.isArmAtPosition(Intake.ARM_STOWED_POSITION, 0.1);
+            case IDLE -> intake.isArmAtPosition(IntakeConstants.ARM_STOWED_POSITION, 0.1);
+            case INTAKING, OUTTAKING -> intake.isArmAtPosition(IntakeConstants.ARM_DEPLOYED_POSITION, 0.1);
+            case SHOOTING -> intake.isArmAtPosition(IntakeConstants.ARM_STOWED_POSITION, 0.1);
         };
     }
 

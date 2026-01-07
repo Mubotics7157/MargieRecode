@@ -21,10 +21,8 @@ public class Shooter extends SubsystemBase {
     private boolean shooterEnabled = false;
 
     // Ball detection via indexer current
-    private static final double BALL_DETECTION_CURRENT_THRESHOLD = 30.0; // Amps
-    private static final double BALL_DETECTION_DEBOUNCE_TIME = 0.1; // Seconds
     private final Debouncer ballDetectionDebouncer =
-            new Debouncer(BALL_DETECTION_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
+            new Debouncer(ShooterConstants.BALL_DETECTION_DEBOUNCE_TIME, Debouncer.DebounceType.kFalling);
     private boolean ballDetectedInShooter = false;
 
     // Mechanism2d for visualization
@@ -92,8 +90,8 @@ public class Shooter extends SubsystemBase {
         Logger.processInputs("Shooter", inputs);
 
         // Ball detection debounce logic
-        ballDetectedInShooter =
-                ballDetectionDebouncer.calculate(inputs.indexerCurrentAmps >= BALL_DETECTION_CURRENT_THRESHOLD);
+        ballDetectedInShooter = ballDetectionDebouncer.calculate(
+                inputs.indexerCurrentAmps >= ShooterConstants.BALL_DETECTION_CURRENT_THRESHOLD);
 
         // Control shooter based on enable state
         if (shooterEnabled && targetFlywheelRPM > 0) {

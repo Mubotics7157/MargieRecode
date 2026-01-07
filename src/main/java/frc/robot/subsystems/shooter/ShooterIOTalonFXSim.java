@@ -5,24 +5,6 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
 public class ShooterIOTalonFXSim implements ShooterIO {
-    // Hardware configuration constants
-    private static final double FLYWHEEL_GEAR_RATIO = 1.0; // Direct drive
-    private static final double HOOD_GEAR_RATIO = 50.0; // 50:1 reduction
-
-    // Simulation parameters
-    private static final double FLYWHEEL_MOI = 0.004; // kg*m^2 (flywheel mass)
-    private static final double HOOD_MOI = 0.025; // kg*m^2 (hood assembly mass)
-
-    // Hood conversion: native units (0-12) correspond to exit shot angles (54-74 degrees)
-    private static final double MIN_NATIVE_UNITS = 0.0;
-    private static final double MAX_NATIVE_UNITS = 12.0;
-    private static final double MIN_EXIT_ANGLE_DEGREES = 54.0;
-    private static final double MAX_EXIT_ANGLE_DEGREES = 74.0;
-
-    // Soft limits in native units
-    private static final double SOFT_LIMIT_REVERSE_NATIVE = 1.0;
-    private static final double SOFT_LIMIT_FORWARD_NATIVE = 12.0;
-
     // Motor simulations for flywheels
     private final DCMotorSim flywheelMidSim;
     private final DCMotorSim flywheelRightSim;
@@ -45,7 +27,7 @@ public class ShooterIOTalonFXSim implements ShooterIO {
     // Control state
     private double targetFlywheelRPM = 0.0;
     private double targetFlywheel2InRPM = 0.0;
-    private double targetHoodDegrees = MIN_EXIT_ANGLE_DEGREES; // Exit angle in degrees
+    private double targetHoodDegrees = ShooterConstants.MIN_EXIT_ANGLE_DEGREES;
     private boolean flywheelClosedLoop = false;
     private boolean flywheel2InClosedLoop = false;
     private boolean hoodClosedLoop = false;
@@ -54,44 +36,27 @@ public class ShooterIOTalonFXSim implements ShooterIO {
     private static final double VELOCITY_KP = 0.0002;
     private static final double HOOD_KP = 0.5;
 
-    /** Converts exit shot angle (degrees) to native motor units. */
-    private static double degreesToNative(double degrees) {
-        return (degrees - MIN_EXIT_ANGLE_DEGREES)
-                        / (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
-                        * (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
-                + MIN_NATIVE_UNITS;
-    }
-
-    /** Converts native motor units to exit shot angle (degrees). */
-    private static double nativeToDegrees(double nativeUnits) {
-        return (nativeUnits - MIN_NATIVE_UNITS)
-                        / (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
-                        * (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
-                + MIN_EXIT_ANGLE_DEGREES;
-    }
-
-    /** Returns the minimum exit angle allowed by soft limits. */
-    private static double getMinExitAngleDegrees() {
-        return nativeToDegrees(SOFT_LIMIT_REVERSE_NATIVE);
-    }
-
-    /** Returns the maximum exit angle allowed by soft limits. */
-    private static double getMaxExitAngleDegrees() {
-        return nativeToDegrees(SOFT_LIMIT_FORWARD_NATIVE);
-    }
-
     public ShooterIOTalonFXSim() {
         // Create flywheel simulations - Kraken X60 for each flywheel (direct drive)
         flywheelMidSim = new DCMotorSim(
-                LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), FLYWHEEL_MOI, FLYWHEEL_GEAR_RATIO),
+                LinearSystemId.createDCMotorSystem(
+                        DCMotor.getKrakenX60(1),
+                        ShooterConstants.SIM_FLYWHEEL_MOI,
+                        ShooterConstants.SIM_FLYWHEEL_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         flywheelRightSim = new DCMotorSim(
-                LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), FLYWHEEL_MOI, FLYWHEEL_GEAR_RATIO),
+                LinearSystemId.createDCMotorSystem(
+                        DCMotor.getKrakenX60(1),
+                        ShooterConstants.SIM_FLYWHEEL_MOI,
+                        ShooterConstants.SIM_FLYWHEEL_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         flywheel2InSim = new DCMotorSim(
-                LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), FLYWHEEL_MOI, FLYWHEEL_GEAR_RATIO),
+                LinearSystemId.createDCMotorSystem(
+                        DCMotor.getKrakenX60(1),
+                        ShooterConstants.SIM_FLYWHEEL_MOI,
+                        ShooterConstants.SIM_FLYWHEEL_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         // Create indexer simulations
@@ -103,7 +68,8 @@ public class ShooterIOTalonFXSim implements ShooterIO {
 
         // Create hood simulation - 1 Kraken X60 motor with high gear reduction
         hoodSim = new DCMotorSim(
-                LinearSystemId.createDCMotorSystem(DCMotor.getKrakenX60(1), HOOD_MOI, HOOD_GEAR_RATIO),
+                LinearSystemId.createDCMotorSystem(
+                        DCMotor.getKrakenX60(1), ShooterConstants.SIM_HOOD_MOI, ShooterConstants.SIM_HOOD_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
     }
 
@@ -132,12 +98,12 @@ public class ShooterIOTalonFXSim implements ShooterIO {
         // Simulation uses radians internally: 2*PI radians = 1 native unit (rotation)
         double nativePosition = hoodSim.getAngularPositionRad() / (2.0 * Math.PI);
 
-        if (nativePosition < SOFT_LIMIT_REVERSE_NATIVE) {
-            hoodSim.setState(SOFT_LIMIT_REVERSE_NATIVE * 2.0 * Math.PI, 0.0);
-            nativePosition = SOFT_LIMIT_REVERSE_NATIVE;
-        } else if (nativePosition > SOFT_LIMIT_FORWARD_NATIVE) {
-            hoodSim.setState(SOFT_LIMIT_FORWARD_NATIVE * 2.0 * Math.PI, 0.0);
-            nativePosition = SOFT_LIMIT_FORWARD_NATIVE;
+        if (nativePosition < ShooterConstants.SOFT_LIMIT_REVERSE_NATIVE) {
+            hoodSim.setState(ShooterConstants.SOFT_LIMIT_REVERSE_NATIVE * 2.0 * Math.PI, 0.0);
+            nativePosition = ShooterConstants.SOFT_LIMIT_REVERSE_NATIVE;
+        } else if (nativePosition > ShooterConstants.SOFT_LIMIT_FORWARD_NATIVE) {
+            hoodSim.setState(ShooterConstants.SOFT_LIMIT_FORWARD_NATIVE * 2.0 * Math.PI, 0.0);
+            nativePosition = ShooterConstants.SOFT_LIMIT_FORWARD_NATIVE;
         }
 
         // Update flywheel velocities (convert rad/s to RPM)
@@ -159,7 +125,7 @@ public class ShooterIOTalonFXSim implements ShooterIO {
         inputs.temperatureCelsius = 25.0; // Room temperature in sim
 
         // Update hood telemetry - convert native units to exit angle degrees
-        inputs.hoodPositionDegrees = nativeToDegrees(nativePosition);
+        inputs.hoodPositionDegrees = ShooterConstants.nativeToDegrees(nativePosition);
 
         // Check if hood is at setpoint (both in exit angle degrees)
         inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees) < 1.0;
@@ -233,7 +199,9 @@ public class ShooterIOTalonFXSim implements ShooterIO {
     public void setHoodPosition(double degrees) {
         hoodClosedLoop = true;
         // Clamp to valid exit angle range (soft limits will also enforce this)
-        targetHoodDegrees = Math.max(getMinExitAngleDegrees(), Math.min(getMaxExitAngleDegrees(), degrees));
+        targetHoodDegrees = Math.max(
+                ShooterConstants.getMinExitAngleDegrees(),
+                Math.min(ShooterConstants.getMaxExitAngleDegrees(), degrees));
     }
 
     @Override
@@ -246,7 +214,7 @@ public class ShooterIOTalonFXSim implements ShooterIO {
     @Override
     public void resetHoodPosition() {
         hoodSim.setState(0.0, 0.0);
-        targetHoodDegrees = MIN_EXIT_ANGLE_DEGREES;
+        targetHoodDegrees = ShooterConstants.MIN_EXIT_ANGLE_DEGREES;
     }
 
     // Helper method for flywheel velocity closed-loop control
@@ -285,14 +253,14 @@ public class ShooterIOTalonFXSim implements ShooterIO {
     private void updateHoodControl() {
         // Get current position in native units, then convert to exit angle degrees
         double nativePosition = hoodSim.getAngularPositionRad() / (2.0 * Math.PI);
-        double currentDegrees = nativeToDegrees(nativePosition);
+        double currentDegrees = ShooterConstants.nativeToDegrees(nativePosition);
 
         // Error in exit angle degrees
         double error = targetHoodDegrees - currentDegrees;
         double voltage = error * HOOD_KP;
 
         // Gravity compensation (approximate)
-        voltage += 0.5 * Math.cos(Math.toRadians(currentDegrees - MIN_EXIT_ANGLE_DEGREES));
+        voltage += 0.5 * Math.cos(Math.toRadians(currentDegrees - ShooterConstants.MIN_EXIT_ANGLE_DEGREES));
 
         voltage = Math.max(-12.0, Math.min(12.0, voltage));
 

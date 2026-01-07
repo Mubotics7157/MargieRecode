@@ -15,7 +15,6 @@ package frc.robot.subsystems.drive;
 
 import static edu.wpi.first.units.Units.*;
 
-import com.ctre.phoenix6.CANBus;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
@@ -64,36 +63,21 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase implements Vision.VisionConsumer {
-    // TunerConstants doesn't include these constants, so they are declared locally
-    static final double ODOMETRY_FREQUENCY =
-            new CANBus(TunerConstants.DrivetrainConstants.CANBusName).isNetworkFD() ? 250.0 : 100.0;
-    public static final double DRIVE_BASE_RADIUS = Math.max(
-            Math.max(
-                    Math.hypot(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
-                    Math.hypot(TunerConstants.FrontRight.LocationX, TunerConstants.FrontRight.LocationY)),
-            Math.max(
-                    Math.hypot(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
-                    Math.hypot(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)));
-
-    // PathPlanner config constants
-    private static final double ROBOT_MASS_KG = 39.0;
-    private static final double ROBOT_MOI = 3.255;
-    private static final double WHEEL_COF = 1.48;
-    private static final double MAX_STEER_VELOCITY_RAD_PER_SEC = 10;
+    // PathPlanner config
     private static final RobotConfig PP_CONFIG = new RobotConfig(
-            ROBOT_MASS_KG,
-            ROBOT_MOI,
+            DriveConstants.ROBOT_MASS_KG,
+            DriveConstants.ROBOT_MOI,
             new ModuleConfig(
                     TunerConstants.FrontLeft.WheelRadius,
                     TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
-                    WHEEL_COF,
+                    DriveConstants.WHEEL_COF,
                     DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
                     TunerConstants.FrontLeft.SlipCurrent,
                     1),
             getModuleTranslations());
 
     public static final DriveTrainSimulationConfig mapleSimConfig = DriveTrainSimulationConfig.Default()
-            .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
+            .withRobotMass(Kilograms.of(DriveConstants.ROBOT_MASS_KG))
             .withCustomModuleTranslations(getModuleTranslations())
             .withGyro(COTS.ofPigeon2())
             .withSwerveModule(new SwerveModuleSimulationConfig(
@@ -105,7 +89,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
                     Meters.of(TunerConstants.FrontLeft.WheelRadius),
                     KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
-                    WHEEL_COF));
+                    DriveConstants.WHEEL_COF));
 
     static final Lock odometryLock = new ReentrantLock();
     private final GyroIO gyroIO;
@@ -176,7 +160,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                         null, null, null, (state) -> Logger.recordOutput("Drive/SysIdState", state.toString())),
                 new SysIdRoutine.Mechanism((voltage) -> runCharacterization(voltage.in(Volts)), null, this));
 
-        setpointGenerator = new SwerveSetpointGenerator(PP_CONFIG, MAX_STEER_VELOCITY_RAD_PER_SEC);
+        setpointGenerator = new SwerveSetpointGenerator(PP_CONFIG, DriveConstants.MAX_STEER_VELOCITY_RAD_PER_SEC);
         previouSetpoint = new SwerveSetpoint(getChassisSpeeds(), getModuleStates(), DriveFeedforwards.zeros(4));
     }
 
@@ -366,7 +350,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     /** Returns the maximum angular speed in radians per sec. */
     public double getMaxAngularSpeedRadPerSec() {
-        return getMaxLinearSpeedMetersPerSec() / DRIVE_BASE_RADIUS;
+        return getMaxLinearSpeedMetersPerSec() / DriveConstants.DRIVE_BASE_RADIUS;
     }
 
     /** Returns an array of module translations. */

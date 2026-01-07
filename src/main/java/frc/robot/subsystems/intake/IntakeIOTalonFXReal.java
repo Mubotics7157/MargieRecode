@@ -14,13 +14,6 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 
 public class IntakeIOTalonFXReal implements IntakeIO {
-    // Hardware configuration constants
-    private static final int ROLLER_MOTOR_ID = 20;
-    private static final int ARM_MOTOR_ID = 19;
-    private static final int INDEXER_MOTOR_ID = 17;
-    private static final double ROLLER_GEAR_RATIO = 3.0;
-    private static final double ARM_GEAR_RATIO = 1; // 248/9
-    private static final double INDEXER_GEAR_RATIO = 3.0;
     // Hardware
     private final TalonFX rollerMotor;
     private final TalonFX armMotor;
@@ -50,9 +43,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     public IntakeIOTalonFXReal() {
         // Initialize hardware
-        rollerMotor = new TalonFX(ROLLER_MOTOR_ID, "swerve"); // CHANGE TO SWERVE LATER
-        armMotor = new TalonFX(ARM_MOTOR_ID, "swerve"); // CHANGE TO SWERVE LATER
-        indexerMotor = new TalonFX(INDEXER_MOTOR_ID, "swerve"); // CHANGE LATER TO SWERVE
+        rollerMotor = new TalonFX(IntakeConstants.ROLLER_MOTOR_ID, "swerve");
+        armMotor = new TalonFX(IntakeConstants.ARM_MOTOR_ID, "swerve");
+        indexerMotor = new TalonFX(IntakeConstants.INDEXER_MOTOR_ID, "swerve");
 
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
@@ -60,7 +53,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         // Current limits for roller
-        rollerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ROLLER_CURRENT_LIMIT;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
@@ -70,8 +63,8 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         indexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         indexerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
-        // Current limits for roller
-        indexerConfig.CurrentLimits.StatorCurrentLimit = 60.0;
+        // Current limits for indexer
+        indexerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.INDEXER_CURRENT_LIMIT;
         indexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> indexerMotor.getConfigurator().apply(indexerConfig, 0.25));
@@ -82,15 +75,15 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         armConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // Current limits for arm
-        armConfig.CurrentLimits.StatorCurrentLimit = 30.0;
+        armConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ARM_CURRENT_LIMIT;
         armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         // PID for arm position control
-        armConfig.Slot0.kP = 100.0;
-        armConfig.Slot0.kI = 0.0;
-        armConfig.Slot0.kD = 0.5;
-        armConfig.Slot0.kS = 0.0;
-        armConfig.Slot0.kV = 0.0;
+        armConfig.Slot0.kP = IntakeConstants.ARM_KP;
+        armConfig.Slot0.kI = IntakeConstants.ARM_KI;
+        armConfig.Slot0.kD = IntakeConstants.ARM_KD;
+        armConfig.Slot0.kS = IntakeConstants.ARM_KS;
+        armConfig.Slot0.kV = IntakeConstants.ARM_KV;
 
         tryUntilOk(5, () -> armMotor.getConfigurator().apply(armConfig, 0.25));
 
@@ -141,26 +134,30 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         BaseStatusSignal.refreshAll(indexerVelocity, indexerAppliedVolts, indexerCurrent);
 
         // Roller inputs
-        inputs.rollerPosition = Units.rotationsToRadians(rollerPosition.getValueAsDouble()) / ROLLER_GEAR_RATIO;
-        inputs.rollerVelocity = Units.rotationsToRadians(rollerVelocity.getValueAsDouble()) / ROLLER_GEAR_RATIO;
+        inputs.rollerPosition =
+                Units.rotationsToRadians(rollerPosition.getValueAsDouble()) / IntakeConstants.ROLLER_GEAR_RATIO;
+        inputs.rollerVelocity =
+                Units.rotationsToRadians(rollerVelocity.getValueAsDouble()) / IntakeConstants.ROLLER_GEAR_RATIO;
         inputs.rollerVoltage = rollerAppliedVolts.getValueAsDouble();
         inputs.rollerCurrent = rollerCurrent.getValueAsDouble();
 
         // Arm inputs
-        inputs.armPosition = Units.rotationsToRadians(armPosition.getValueAsDouble()) / ARM_GEAR_RATIO;
-        inputs.armVelocity = Units.rotationsToRadians(armVelocity.getValueAsDouble()) / ARM_GEAR_RATIO;
+        inputs.armPosition = Units.rotationsToRadians(armPosition.getValueAsDouble()) / IntakeConstants.ARM_GEAR_RATIO;
+        inputs.armVelocity = Units.rotationsToRadians(armVelocity.getValueAsDouble()) / IntakeConstants.ARM_GEAR_RATIO;
         inputs.armVoltage = armAppliedVolts.getValueAsDouble();
         inputs.armCurrent = armCurrent.getValueAsDouble();
 
         // Indexer inputs
-        inputs.indexerPosition = Units.rotationsToRadians(indexerPosition.getValueAsDouble()) / INDEXER_GEAR_RATIO;
-        inputs.indexerVelocity = Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / INDEXER_GEAR_RATIO;
+        inputs.indexerPosition =
+                Units.rotationsToRadians(indexerPosition.getValueAsDouble()) / IntakeConstants.INDEXER_GEAR_RATIO;
+        inputs.indexerVelocity =
+                Units.rotationsToRadians(indexerVelocity.getValueAsDouble()) / IntakeConstants.INDEXER_GEAR_RATIO;
         inputs.indexerVoltage = indexerAppliedVolts.getValueAsDouble();
         inputs.indexerCurrent = indexerCurrent.getValueAsDouble();
 
         // Ball detection based on current spike in roller or indexer motors
-        inputs.ballDetected = (inputs.rollerCurrent > BALL_DETECTION_CURRENT_THRESHOLD)
-                || (inputs.indexerCurrent > BALL_DETECTION_CURRENT_THRESHOLD);
+        inputs.ballDetected = (inputs.rollerCurrent > IntakeConstants.BALL_DETECTION_CURRENT_THRESHOLD)
+                || (inputs.indexerCurrent > IntakeConstants.BALL_DETECTION_CURRENT_THRESHOLD);
     }
 
     @Override
@@ -175,7 +172,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     @Override
     public void setArmPosition(double positionRad) {
-        double motorRotations = Units.radiansToRotations(positionRad) * ARM_GEAR_RATIO;
+        double motorRotations = Units.radiansToRotations(positionRad) * IntakeConstants.ARM_GEAR_RATIO;
         armMotor.setControl(positionRequest.withPosition(motorRotations));
     }
 

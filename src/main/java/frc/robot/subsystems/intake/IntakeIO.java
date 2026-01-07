@@ -27,9 +27,6 @@ public interface IntakeIO {
         public boolean ballDetected = false;
     }
 
-    // Ball detection threshold constant (Amps)
-    double BALL_DETECTION_CURRENT_THRESHOLD = 30.0;
-
     default void updateInputs(IntakeIOInputs inputs) {}
 
     default void setRollerDutyCycle(double value) {}

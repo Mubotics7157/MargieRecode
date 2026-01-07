@@ -12,6 +12,86 @@ public final class ShooterConstants {
 
     private ShooterConstants() {}
 
+    // Motor CAN IDs
+    public static final int POOPER_ID = 25;
+    public static final int FLYWHEEL_MIDDLE_ID = 22;
+    public static final int FLYWHEEL_RIGHT_ID = 26;
+    public static final int FLYWHEEL_2IN_ID = 23;
+    public static final int HOOD_PIVOT_ID = 24;
+    public static final int SHOOTER_MOTOR_ID = 27;
+
+    // Gear ratios
+    public static final double ROLLER_GEAR_RATIO = 1.0;
+
+    // Hood conversion: native units (0-12) correspond to exit shot angles (54-74 degrees)
+    public static final double MIN_NATIVE_UNITS = 0.0;
+    public static final double MAX_NATIVE_UNITS = 12.0;
+    public static final double MIN_EXIT_ANGLE_DEGREES = 54.0;
+    public static final double MAX_EXIT_ANGLE_DEGREES = 74.0;
+
+    // Soft limits in native units
+    public static final double SOFT_LIMIT_REVERSE_NATIVE = 1.0;
+    public static final double SOFT_LIMIT_FORWARD_NATIVE = 12.0;
+
+    // Ball detection
+    public static final double BALL_DETECTION_CURRENT_THRESHOLD = 30.0; // Amps
+    public static final double BALL_DETECTION_DEBOUNCE_TIME = 0.1; // Seconds
+
+    // Current limits (Amps)
+    public static final double ROLLER_CURRENT_LIMIT = 80.0;
+    public static final double HOOD_CURRENT_LIMIT = 40.0;
+
+    // Flywheel PID gains
+    public static final double FLYWHEEL_KP = 70.0;
+    public static final double FLYWHEEL_KI = 0.0;
+    public static final double FLYWHEEL_KD = 0.0;
+    public static final double FLYWHEEL_KV = 0.0;
+    public static final double FLYWHEEL_KS = 0.0;
+
+    // Hood PID gains
+    public static final double HOOD_KP = 20.0;
+    public static final double HOOD_KI = 0.0;
+    public static final double HOOD_KD = 2.0;
+    public static final double HOOD_KV = 0.0;
+    public static final double HOOD_KS = 0.0;
+    public static final double HOOD_KG = 3.0;
+
+    // Motion Magic configuration
+    public static final double HOOD_MOTION_MAGIC_KA = 0.1;
+    public static final double HOOD_MOTION_MAGIC_KV = 0.12;
+
+    // Simulation parameters
+    public static final double SIM_FLYWHEEL_GEAR_RATIO = 1.0;
+    public static final double SIM_HOOD_GEAR_RATIO = 50.0;
+    public static final double SIM_FLYWHEEL_MOI = 0.004; // kg*m^2
+    public static final double SIM_HOOD_MOI = 0.025; // kg*m^2
+
+    /** Converts exit shot angle (degrees) to native motor units. */
+    public static double degreesToNative(double degrees) {
+        return (degrees - MIN_EXIT_ANGLE_DEGREES)
+                        / (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
+                        * (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
+                + MIN_NATIVE_UNITS;
+    }
+
+    /** Converts native motor units to exit shot angle (degrees). */
+    public static double nativeToDegrees(double nativeUnits) {
+        return (nativeUnits - MIN_NATIVE_UNITS)
+                        / (MAX_NATIVE_UNITS - MIN_NATIVE_UNITS)
+                        * (MAX_EXIT_ANGLE_DEGREES - MIN_EXIT_ANGLE_DEGREES)
+                + MIN_EXIT_ANGLE_DEGREES;
+    }
+
+    /** Returns the minimum exit angle allowed by soft limits. */
+    public static double getMinExitAngleDegrees() {
+        return nativeToDegrees(SOFT_LIMIT_REVERSE_NATIVE);
+    }
+
+    /** Returns the maximum exit angle allowed by soft limits. */
+    public static double getMaxExitAngleDegrees() {
+        return nativeToDegrees(SOFT_LIMIT_FORWARD_NATIVE);
+    }
+
     // Distance thresholds (meters)
     public static final double MIN_SHOOTING_DISTANCE = 1.0;
     public static final double MAX_SHOOTING_DISTANCE = 6.0;
