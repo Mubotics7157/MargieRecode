@@ -31,6 +31,7 @@ import frc.robot.lib.pathplanner.auto.AutoBuilder;
 import frc.robot.lib.pathplanner.auto.NamedCommands;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.*;
+import frc.robot.subsystems.led.*;
 import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.SuperstructureIO;
@@ -54,6 +55,7 @@ public class RobotContainer {
     private final Intake intake;
     private final Shooter shooter;
     private final Superstructure superstructure;
+    private final Led led;
 
     // Elastic Dashboard
     private final ElasticDashboard elasticDashboard;
@@ -93,6 +95,10 @@ public class RobotContainer {
                 intake = new Intake(new IntakeIOTalonFXReal());
                 shooter = new Shooter(new ShooterIOTalonFXReal());
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
+                led = new Led(new LedIOCANdle(
+                        Constants.LedConstants.kCandleId,
+                        Constants.LedConstants.kCanBus,
+                        Constants.LedConstants.kTotalLedCount));
                 break;
 
             case SIM:
@@ -117,6 +123,7 @@ public class RobotContainer {
                 intake = new Intake(new IntakeIOTalonFXSim());
                 shooter = new Shooter(new ShooterIOTalonFXSim());
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
+                led = new Led(new LedIO() {}); // Simulation doesn't need real LED hardware
                 break;
 
             default:
@@ -126,8 +133,12 @@ public class RobotContainer {
                 intake = new Intake(new IntakeIO() {});
                 shooter = new Shooter(new ShooterIO() {});
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIO() {});
+                led = new Led(new LedIO() {});
                 break;
         }
+
+        // Set superstructure reference for automatic LED state
+        led.setSuperstructure(superstructure);
 
         NamedCommands.registerCommand("SetIntake", SuperstructureCommands.intake(superstructure));
         NamedCommands.registerCommand("SetIdle", SuperstructureCommands.setIdle(superstructure));

@@ -130,6 +130,7 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
         rollerConfig.Slot0.kP = 5;
         rollerConfig.Slot0.kS = 0.7;
+        rollerConfig.Slot0.kV = 0.7;
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         tryUntilOk(5, () -> FlywheelMid.getConfigurator().apply(rollerConfig, 0.25));
         tryUntilOk(5, () -> FlywheelRight.getConfigurator().apply(rollerConfig, 0.25));
