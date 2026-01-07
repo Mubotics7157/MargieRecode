@@ -172,25 +172,26 @@ public class DriveCommands {
         }
         final HeadingState state = new HeadingState();
 
-        // Swerve requests
+        // Swerve requests - deadbands proportional to max speeds (per 254)
+        final double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
+        final double maxAngularRate = drive.getMaxAngularSpeedRadPerSec();
+
         final SwerveRequest.FieldCentric driveNoHeading = new SwerveRequest.FieldCentric()
-                .withDeadband(0.05)
-                .withRotationalDeadband(STEER_DEADBAND)
+                .withDeadband(maxSpeed * 0.05)
+                .withRotationalDeadband(maxAngularRate * STEER_DEADBAND)
                 .withDriveRequestType(
                         Constants.currentMode == Constants.Mode.SIM
                                 ? SwerveModule.DriveRequestType.OpenLoopVoltage
                                 : SwerveModule.DriveRequestType.Velocity)
-                .withDesaturateWheelSpeeds(true)
-                .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
+                .withDesaturateWheelSpeeds(true);
 
         final SwerveRequest.FieldCentricFacingAngle driveWithHeading = new SwerveRequest.FieldCentricFacingAngle()
-                .withDeadband(0.05)
+                .withDeadband(maxSpeed * 0.05)
                 .withDriveRequestType(
                         Constants.currentMode == Constants.Mode.SIM
                                 ? SwerveModule.DriveRequestType.OpenLoopVoltage
                                 : SwerveModule.DriveRequestType.Velocity)
-                .withDesaturateWheelSpeeds(true)
-                .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
+                .withDesaturateWheelSpeeds(true);
 
         // Configure heading controller PID
         driveWithHeading.HeadingController.setPID(HEADING_KP, HEADING_KI, HEADING_KD);
@@ -204,10 +205,7 @@ public class DriveCommands {
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
                             double turn = omegaSupplier.getAsDouble();
 
-                            // Scale to max speeds
-                            double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
-                            double maxAngularRate = drive.getMaxAngularSpeedRadPerSec();
-
+                            // Scale to max speeds (using maxSpeed and maxAngularRate from outer scope)
                             double throttle = linearVelocity.getX() * maxSpeed;
                             double strafe = linearVelocity.getY() * maxSpeed;
 
@@ -236,8 +234,8 @@ public class DriveCommands {
                                                     > ROTATION_VELOCITY_THRESHOLD_DEG_PER_SEC);
 
                             if (manualTurnMode) {
-                                // Manual turn mode - direct rotational control
-                                double turnRate = Math.copySign(turn * turn, turn) * maxAngularRate;
+                                // Manual turn mode - direct rotational control (no squaring, per 254)
+                                double turnRate = turn * maxAngularRate;
 
                                 drive.setControl(driveNoHeading
                                         .withVelocityX(throttleFieldFrame)
