@@ -156,7 +156,7 @@ public class DriveCommands {
             boolean enableCardinalSnap) {
 
         // Constants
-        final double STEER_DEADBAND = 0.1;
+        final double STEER_DEADBAND = 0.05;
         final double MODE_SWITCH_TIMEOUT_SECONDS = 0.25;
         final double ROTATION_VELOCITY_THRESHOLD_DEG_PER_SEC = 10.0;
         final double HEADING_KP = 5.0;
