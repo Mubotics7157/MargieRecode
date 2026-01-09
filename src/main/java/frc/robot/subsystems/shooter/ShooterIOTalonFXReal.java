@@ -52,15 +52,41 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
     private double targetHoodDegrees = ShooterConstants.MIN_EXIT_ANGLE_DEGREES;
 
+    /** Converts exit shot angle (degrees) to native motor units. */
+    private static double degreesToNative(double degrees) {
+        return (degrees - ShooterConstants.MIN_EXIT_ANGLE_DEGREES)
+                        / (ShooterConstants.MAX_EXIT_ANGLE_DEGREES - ShooterConstants.MIN_EXIT_ANGLE_DEGREES)
+                        * (ShooterConstants.MAX_NATIVE_UNITS - ShooterConstants.MIN_NATIVE_UNITS)
+                + ShooterConstants.MIN_NATIVE_UNITS;
+    }
+
+    /** Converts native motor units to exit shot angle (degrees). */
+    private static double nativeToDegrees(double nativeUnits) {
+        return (nativeUnits - ShooterConstants.MIN_NATIVE_UNITS)
+                        / (ShooterConstants.MAX_NATIVE_UNITS - ShooterConstants.MIN_NATIVE_UNITS)
+                        * (ShooterConstants.MAX_EXIT_ANGLE_DEGREES - ShooterConstants.MIN_EXIT_ANGLE_DEGREES)
+                + ShooterConstants.MIN_EXIT_ANGLE_DEGREES;
+    }
+
+    /** Returns the minimum exit angle allowed by soft limits. */
+    public static double getMinExitAngleDegrees() {
+        return nativeToDegrees(ShooterConstants.SOFT_LIMIT_REVERSE_NATIVE);
+    }
+
+    /** Returns the maximum exit angle allowed by soft limits. */
+    public static double getMaxExitAngleDegrees() {
+        return nativeToDegrees(ShooterConstants.SOFT_LIMIT_FORWARD_NATIVE);
+    }
+
     public ShooterIOTalonFXReal() {
         // Initialize roller motors
-        PooperMotor = new TalonFX(ShooterConstants.POOPER_ID, "swerve");
-        FlywheelMid = new TalonFX(ShooterConstants.FLYWHEEL_MIDDLE_ID, "swerve");
-        FlywheelRight = new TalonFX(ShooterConstants.FLYWHEEL_RIGHT_ID, "swerve");
-        Flywheel2In = new TalonFX(ShooterConstants.FLYWHEEL_2IN_ID, "swerve");
-        ShooterMotor = new TalonFX(ShooterConstants.SHOOTER_MOTOR_ID, "swerve");
+        PooperMotor = new TalonFX(ShooterConstants.POOPER_ID, ShooterConstants.CAN_BUS);
+        FlywheelMid = new TalonFX(ShooterConstants.FLYWHEEL_MIDDLE_ID, ShooterConstants.CAN_BUS);
+        FlywheelRight = new TalonFX(ShooterConstants.FLYWHEEL_RIGHT_ID, ShooterConstants.CAN_BUS);
+        Flywheel2In = new TalonFX(ShooterConstants.FLYWHEEL_2IN_ID, ShooterConstants.CAN_BUS);
+        ShooterMotor = new TalonFX(ShooterConstants.SHOOTER_MOTOR_ID, ShooterConstants.CAN_BUS);
         // Initialize Hood Motor
-        HoodPivot = new TalonFX(ShooterConstants.HOOD_PIVOT_ID, "swerve");
+        HoodPivot = new TalonFX(ShooterConstants.HOOD_PIVOT_ID, ShooterConstants.CAN_BUS);
 
         // Configure roller motors
         TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
@@ -69,27 +95,30 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
         // Current limits for rollers
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        rollerConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.ROLLER_CURRENT_LIMIT;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.ROLLER_STATOR_CURRENT_LIMIT;
 
-        // PID for velocity control
-        rollerConfig.Slot0.kP = 10;
-        rollerConfig.Slot0.kI = 0.0;
-        rollerConfig.Slot0.kD = 0.0;
-        rollerConfig.Slot0.kV = 0.0;
-        rollerConfig.Slot0.kS = 3;
+        // PID for velocity control (Pooper)
+        rollerConfig.Slot0.kP = ShooterConstants.RollerGains.POOPER_KP;
+        rollerConfig.Slot0.kI = ShooterConstants.RollerGains.POOPER_KI;
+        rollerConfig.Slot0.kD = ShooterConstants.RollerGains.POOPER_KD;
+        rollerConfig.Slot0.kV = ShooterConstants.RollerGains.POOPER_KV;
+        rollerConfig.Slot0.kS = ShooterConstants.RollerGains.POOPER_KS;
 
-        // Apply config to all roller motors
+        // Apply config to pooper motor
         tryUntilOk(5, () -> PooperMotor.getConfigurator().apply(rollerConfig, 0.25));
 
-        rollerConfig.Slot0.kP = ShooterConstants.FLYWHEEL_KP;
-        rollerConfig.Slot0.kS = ShooterConstants.FLYWHEEL_KS;
+        // Flywheel Mid/Right config
+        rollerConfig.Slot0.kP = ShooterConstants.RollerGains.FLYWHEEL_KP;
+        rollerConfig.Slot0.kS = ShooterConstants.RollerGains.FLYWHEEL_KS;
+        rollerConfig.Slot0.kV = ShooterConstants.RollerGains.FLYWHEEL_KV;
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         tryUntilOk(5, () -> FlywheelMid.getConfigurator().apply(rollerConfig, 0.25));
         tryUntilOk(5, () -> FlywheelRight.getConfigurator().apply(rollerConfig, 0.25));
 
+        // Flywheel 2In and Shooter Motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        rollerConfig.Slot0.kP = 10;
-        rollerConfig.Slot0.kS = 3;
+        rollerConfig.Slot0.kP = ShooterConstants.RollerGains.FLYWHEEL_2IN_KP;
+        rollerConfig.Slot0.kS = ShooterConstants.RollerGains.FLYWHEEL_2IN_KS;
         tryUntilOk(5, () -> Flywheel2In.getConfigurator().apply(rollerConfig, 0.25));
         tryUntilOk(5, () -> ShooterMotor.getConfigurator().apply(rollerConfig, 0.25));
 
@@ -100,19 +129,19 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
         // Current limits for hood
         hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        hoodConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.HOOD_CURRENT_LIMIT;
+        hoodConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.HOOD_STATOR_CURRENT_LIMIT;
 
         // Motion Magic configuration for smooth hood movement
-        hoodConfig.MotionMagic.MotionMagicExpo_kA = ShooterConstants.HOOD_MOTION_MAGIC_KA;
-        hoodConfig.MotionMagic.MotionMagicExpo_kV = ShooterConstants.HOOD_MOTION_MAGIC_KV;
+        hoodConfig.MotionMagic.MotionMagicExpo_kA = ShooterConstants.HoodGains.MOTION_MAGIC_EXPO_KA;
+        hoodConfig.MotionMagic.MotionMagicExpo_kV = ShooterConstants.HoodGains.MOTION_MAGIC_EXPO_KV;
 
         // PID for position control
-        hoodConfig.Slot0.kP = ShooterConstants.HOOD_KP;
-        hoodConfig.Slot0.kI = ShooterConstants.HOOD_KI;
-        hoodConfig.Slot0.kD = ShooterConstants.HOOD_KD;
-        hoodConfig.Slot0.kV = ShooterConstants.HOOD_KV;
-        hoodConfig.Slot0.kS = ShooterConstants.HOOD_KS;
-        hoodConfig.Slot0.kG = ShooterConstants.HOOD_KG;
+        hoodConfig.Slot0.kP = ShooterConstants.HoodGains.KP;
+        hoodConfig.Slot0.kI = ShooterConstants.HoodGains.KI;
+        hoodConfig.Slot0.kD = ShooterConstants.HoodGains.KD;
+        hoodConfig.Slot0.kV = ShooterConstants.HoodGains.KV;
+        hoodConfig.Slot0.kS = ShooterConstants.HoodGains.KS;
+        hoodConfig.Slot0.kG = ShooterConstants.HoodGains.KG;
         hoodConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         // Soft limits for hood
@@ -150,7 +179,7 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
         // Configure update frequencies
         BaseStatusSignal.setUpdateFrequencyForAll(
-                100,
+                ShooterConstants.STATUS_SIGNAL_UPDATE_FREQUENCY,
                 flywheelMidVelocity,
                 flywheelRightVelocity,
                 flywheel2InVelocity,
@@ -215,8 +244,9 @@ public class ShooterIOTalonFXReal implements ShooterIO {
 
         // Hood telemetry - convert native units to exit angle degrees
         double nativePosition = hoodPosition.getValue().in(Rotations);
-        inputs.hoodPositionDegrees = ShooterConstants.nativeToDegrees(nativePosition);
-        inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees) < 1.0;
+        inputs.hoodPositionDegrees = nativeToDegrees(nativePosition);
+        inputs.hoodAtSetpoint = Math.abs(inputs.hoodPositionDegrees - targetHoodDegrees)
+                < ShooterConstants.HOOD_POSITION_TOLERANCE_DEGREES;
     }
 
     @Override
@@ -283,10 +313,8 @@ public class ShooterIOTalonFXReal implements ShooterIO {
     @Override
     public void setHoodPosition(double degrees) {
         // Clamp to valid exit angle range (soft limits will also enforce this)
-        targetHoodDegrees = Math.max(
-                ShooterConstants.getMinExitAngleDegrees(),
-                Math.min(ShooterConstants.getMaxExitAngleDegrees(), degrees));
-        double nativePosition = ShooterConstants.degreesToNative(targetHoodDegrees);
+        targetHoodDegrees = Math.max(getMinExitAngleDegrees(), Math.min(getMaxExitAngleDegrees(), degrees));
+        double nativePosition = degreesToNative(targetHoodDegrees);
         HoodPivot.setControl(hoodPositionRequest.withPosition(nativePosition));
     }
 

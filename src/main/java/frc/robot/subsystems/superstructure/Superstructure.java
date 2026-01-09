@@ -56,15 +56,15 @@ public class Superstructure extends SubsystemBase {
                 break;
             case INTAKING:
                 intake.deployArm();
-                intake.setRollerDutyCycle(0.5);
-                intake.setIndexerDutyCycle(0.5);
+                intake.setRollerDutyCycle(SuperstructureConstants.INTAKE_ROLLER_DUTY_CYCLE);
+                intake.setIndexerDutyCycle(SuperstructureConstants.INTAKE_INDEXER_DUTY_CYCLE);
                 // Stop indexer and pooper when ball is detected to hold it in place
                 if (shooter.isBallDetectedInShooter()) {
                     shooter.stopIndexer();
                     shooter.stopPooper();
                 } else {
-                    shooter.runIndexer(50.0); // Run starwheels to feed ball
-                    shooter.feedBall(); // Run pooper to continue ball through path
+                    shooter.runIndexer(SuperstructureConstants.SHOOTER_INDEXER_VELOCITY);
+                    shooter.feedBall();
                 }
                 break;
             case SHOOTING:
@@ -73,8 +73,8 @@ public class Superstructure extends SubsystemBase {
                 // Wait for flywheels to reach target RPM before feeding ball
                 if (shooter.flywheelAtSetpoint()) {
                     intake.feedToShooter();
-                    shooter.runIndexer(50.0); // Run starwheels to feed ball
-                    shooter.feedBall(); // Run pooper to continue ball through path
+                    shooter.runIndexer(SuperstructureConstants.SHOOTER_INDEXER_VELOCITY);
+                    shooter.feedBall();
                 } else {
                     intake.setIndexerDutyCycle(0.0);
                     shooter.stopIndexer();
@@ -83,8 +83,8 @@ public class Superstructure extends SubsystemBase {
                 break;
             case OUTTAKING:
                 intake.deployArm();
-                intake.setRollerDutyCycle(-0.5);
-                intake.setIndexerDutyCycle(-0.5);
+                intake.setRollerDutyCycle(SuperstructureConstants.OUTTAKE_ROLLER_DUTY_CYCLE);
+                intake.setIndexerDutyCycle(SuperstructureConstants.OUTTAKE_INDEXER_DUTY_CYCLE);
                 break;
         }
     }
@@ -121,9 +121,12 @@ public class Superstructure extends SubsystemBase {
         }
 
         return switch (currentGoal) {
-            case IDLE -> intake.isArmAtPosition(IntakeConstants.ARM_STOWED_POSITION, 0.1);
-            case INTAKING, OUTTAKING -> intake.isArmAtPosition(IntakeConstants.ARM_DEPLOYED_POSITION, 0.1);
-            case SHOOTING -> intake.isArmAtPosition(IntakeConstants.ARM_STOWED_POSITION, 0.1);
+            case IDLE -> intake.isArmAtPosition(
+                    IntakeConstants.ARM_STOWED_POSITION, SuperstructureConstants.ARM_POSITION_TOLERANCE);
+            case INTAKING, OUTTAKING -> intake.isArmAtPosition(
+                    IntakeConstants.ARM_DEPLOYED_POSITION, SuperstructureConstants.ARM_POSITION_TOLERANCE);
+            case SHOOTING -> intake.isArmAtPosition(
+                    IntakeConstants.ARM_STOWED_POSITION, SuperstructureConstants.ARM_POSITION_TOLERANCE);
         };
     }
 

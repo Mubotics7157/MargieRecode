@@ -1,59 +1,106 @@
-# FRC Robot Project - Sim Skeleton
+# MargieRecode - FRC Robot Project
 
-This is an FRC robot project using WPILib 2025, AdvantageKit, and CTRE Phoenix 6.
+An FRC (FIRST Robotics Competition) robot project using WPILib 2025, AdvantageKit for logging, and CTRE Phoenix 6 for motor control. The project follows a command-based architecture with IO abstraction layers for hardware components.
+
+## Features
+
+- **Swerve Drive** - Full swerve drive system with module control
+- **AdvantageKit Logging** - Comprehensive logging and log replay support
+- **IO Abstraction** - Hardware-independent subsystem design for easy testing and simulation
+- **PathPlanner Integration** - Autonomous path following
+- **LimeLight** - Camera and vision processing for target tracking
+- **Elastic Dashboard** - Using Elastic dashboard for logging and competition purposes instead of Shuffleboard or Driverstation.
 
 ## Prerequisites
 
-- WPILib 2025 installed (includes Java JDK)
+- WPILib 2025 installed (includes Java JDK 17)
 - Visual Studio Code with WPILib extension (recommended)
 
-## Build Instructions
-
-### Windows
-
-The project uses Gradle for building. The Java JDK is included with WPILib installation.
+## Build Commands
 
 ```bash
-# Set JAVA_HOME to WPILib's JDK and build
-JAVA_HOME="C:/Users/Public/wpilib/2025/jdk" ./gradlew build
-
-# Or use the gradlew wrapper directly if JAVA_HOME is configured in your environment
+# Build the project
 ./gradlew build
+
+# Run tests
+./gradlew test
+
+# Format code (Spotless)
+./gradlew spotlessApply
+
+# Check formatting
+./gradlew spotlessCheck
+
+# Deploy to RoboRIO
+./gradlew deploy
+
+# Run simulation
+./gradlew simulateJava
+
+# Log replay
+./gradlew replayWatch
 ```
 
-### Common Build Issues and Solutions
+**Note:** On Windows, if JAVA_HOME is not configured, use:
+```bash
+JAVA_HOME="C:/Users/Public/wpilib/2025/jdk" ./gradlew build
+```
 
-#### Issue 1: JAVA_HOME not set
-**Error:** `ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH`
+## Project Structure
 
-**Solution:**
-- On Windows, WPILib's JDK is located at `C:\Users\Public\wpilib\2025\jdk`
-- Set JAVA_HOME before running gradlew: `JAVA_HOME="C:/Users/Public/wpilib/2025/jdk" ./gradlew build`
-- Or set it permanently in your system environment variables
+```
+src/main/java/frc/robot/
+├── Main.java           # Entry point
+├── Robot.java          # LoggedRobot, initializes AdvantageKit
+├── RobotContainer.java # Subsystems, commands, button bindings
+├── Constants.java      # Global constants
+├── subsystems/
+│   ├── drive/          # Swerve drive system
+│   ├── intake/         # Game piece intake
+│   ├── shooter/        # Shooting mechanism
+│   ├── superstructure/ # Coordinated subsystem control
+│   └── vision/         # Camera and vision processing
+└── commands/           # Robot commands
+```
 
-#### Issue 2: Command execution in Windows
-**Problem:** Windows command prompt and bash handle commands differently
+## Architecture
 
-**Solution:**
-- Use `./gradlew` in Git Bash or WSL
-- Use `gradlew.bat` in Windows Command Prompt
-- In PowerShell, use `./gradlew` or `.\gradlew.bat`
+### IO Abstraction Pattern
 
-### Important Notes
+Each subsystem follows an IO abstraction pattern for hardware independence:
 
-#### CTRE Phoenix 6 API
-When using CTRE Phoenix 6 with TalonFX (Kraken X60):
-- Status signals use typed units (Angle, AngularVelocity, Voltage, etc.) not raw doubles
-- Use `.getValue().in(Units.YourUnit)` to get numeric values
-- Current limits: Use `SupplyCurrentLimit` and `StatorCurrentLimit` (not threshold-based)
-- FOC (Field Oriented Control) is available and recommended for better performance
+- **Subsystem Class** - Core logic and command interface (e.g., `Drive.java`)
+- **IO Interface** - Hardware abstraction layer (e.g., `DriveIO.java`)
+- **IO Implementations**:
+  - Real hardware (e.g., `DriveIOTalonFX.java`)
+  - Simulation (e.g., `DriveIOSim.java`)
 
-Example:
+This pattern enables:
+- Unit testing without hardware
+- Full simulation support
+- Easy hardware swaps
+- AdvantageKit log replay
+
+## Vendor Dependencies
+
+- WPILib 2025.3.2
+- CTRE Phoenix 6
+- AdvantageKit
+- PathPlanner
+- PhotonLib
+- Maple-sim
+
+## CTRE Phoenix 6 Notes
+
+Phoenix 6 uses typed units, not raw doubles:
+
 ```java
-// Correct Phoenix 6 usage
+// Correct usage
 StatusSignal<Angle> positionSignal = motor.getPosition();
 double rotations = positionSignal.getValue().in(Units.Rotations);
 
-// Incorrect (won't compile)
-StatusSignal<Double> positionSignal = motor.getPosition(); // Type mismatch!
+// Incorrect - won't compile
+StatusSignal<Double> positionSignal = motor.getPosition();
 ```
+
+Current limits use `SupplyCurrentLimit` and `StatorCurrentLimit` (not threshold-based limits).

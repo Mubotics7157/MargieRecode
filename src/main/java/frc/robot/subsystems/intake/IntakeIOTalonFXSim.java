@@ -20,21 +20,22 @@ public class IntakeIOTalonFXSim implements IntakeIO {
 
     public IntakeIOTalonFXSim() {
         // Kraken X60 for roller (1 motor, geared)
+        // Using LinearSystemId to create the plant
         rollerSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(
-                        DCMotor.getKrakenX60(1), IntakeConstants.SIM_ROLLER_MOI, IntakeConstants.ROLLER_GEAR_RATIO),
+                        DCMotor.getKrakenX60(1), IntakeConstants.Sim.ROLLER_MOI, IntakeConstants.ROLLER_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         // Kraken X60 for indexer (1 motor, geared)
         indexerSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(
-                        DCMotor.getKrakenX60(1), IntakeConstants.SIM_INDEXER_MOI, IntakeConstants.INDEXER_GEAR_RATIO),
+                        DCMotor.getKrakenX60(1), IntakeConstants.Sim.INDEXER_MOI, IntakeConstants.INDEXER_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
 
         // Kraken X60 for arm (1 motor, highly geared)
         armSim = new DCMotorSim(
                 LinearSystemId.createDCMotorSystem(
-                        DCMotor.getKrakenX60(1), IntakeConstants.SIM_ARM_MOI, IntakeConstants.SIM_ARM_GEAR_RATIO),
+                        DCMotor.getKrakenX60(1), IntakeConstants.Sim.ARM_MOI, IntakeConstants.Sim.ARM_GEAR_RATIO),
                 DCMotor.getKrakenX60(1));
     }
 
@@ -46,10 +47,10 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         indexerSim.update(0.02);
 
         // Clamp arm position to realistic bounds
-        if (armSim.getAngularPositionRad() < IntakeConstants.SIM_ARM_MIN_ANGLE) {
-            armSim.setState(IntakeConstants.SIM_ARM_MIN_ANGLE, 0.0);
-        } else if (armSim.getAngularPositionRad() > IntakeConstants.SIM_ARM_MAX_ANGLE) {
-            armSim.setState(IntakeConstants.SIM_ARM_MAX_ANGLE, 0.0);
+        if (armSim.getAngularPositionRad() < IntakeConstants.Sim.ARM_MIN_ANGLE) {
+            armSim.setState(IntakeConstants.Sim.ARM_MIN_ANGLE, 0.0);
+        } else if (armSim.getAngularPositionRad() > IntakeConstants.Sim.ARM_MAX_ANGLE) {
+            armSim.setState(IntakeConstants.Sim.ARM_MAX_ANGLE, 0.0);
         }
 
         // Update roller inputs
@@ -73,13 +74,13 @@ public class IntakeIOTalonFXSim implements IntakeIO {
         // Simulate ball detection
         // Ball is detected when we're intaking and have been running for a bit
         if (!simulatedGamePiece
-                && rollerAppliedVolts > 6.0
-                && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > 10.0) {
+                && rollerAppliedVolts > IntakeConstants.Sim.INTAKE_VOLTAGE_THRESHOLD
+                && Math.abs(rollerSim.getAngularVelocityRadPerSec()) > IntakeConstants.Sim.INTAKE_VELOCITY_THRESHOLD) {
             simulatedGamePiece = true;
         }
 
         // Ball is ejected when we're outtaking
-        if (simulatedGamePiece && rollerAppliedVolts < -6.0) {
+        if (simulatedGamePiece && rollerAppliedVolts < IntakeConstants.Sim.OUTTAKE_VOLTAGE_THRESHOLD) {
             simulatedGamePiece = false;
         }
 
@@ -102,19 +103,18 @@ public class IntakeIOTalonFXSim implements IntakeIO {
     @Override
     public void setArmPosition(double positionRad) {
         // Simple P controller for position control in sim
-        double kP = 10.0;
         double error = positionRad - armSim.getAngularPositionRad();
-        double voltage = error * kP;
+        double voltage = error * IntakeConstants.Sim.ARM_KP;
 
         // Clamp voltage
-        voltage = Math.max(-12.0, Math.min(12.0, voltage));
+        voltage = Math.max(-IntakeConstants.Sim.MAX_VOLTAGE, Math.min(IntakeConstants.Sim.MAX_VOLTAGE, voltage));
 
         setArmVoltage(voltage);
     }
 
     @Override
     public void resetArmPosition() {
-        armSim.setState(IntakeConstants.SIM_ARM_MIN_ANGLE, 0.0);
+        armSim.setState(IntakeConstants.Sim.ARM_MIN_ANGLE, 0.0);
     }
 
     @Override

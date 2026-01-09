@@ -1,30 +1,30 @@
 package frc.robot.subsystems.drive;
 
-import com.ctre.phoenix6.CANBus;
-import edu.wpi.first.math.util.Units;
-import frc.robot.generated.TunerConstants;
-
-/** Constants for the drive subsystem. */
+/**
+ * Constants for the Drive subsystem. Contains robot physical parameters, PathPlanner configuration, and control gains.
+ */
 public final class DriveConstants {
 
     private DriveConstants() {}
 
-    // Odometry frequency based on CAN bus type
-    public static final double ODOMETRY_FREQUENCY =
-            new CANBus(TunerConstants.DrivetrainConstants.CANBusName).isNetworkFD() ? 250.0 : 100.0;
-
-    // Drive base radius (calculated from module positions)
-    public static final double DRIVE_BASE_RADIUS = Math.max(
-            Math.max(
-                    Math.hypot(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
-                    Math.hypot(TunerConstants.FrontRight.LocationX, TunerConstants.FrontRight.LocationY)),
-            Math.max(
-                    Math.hypot(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
-                    Math.hypot(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)));
-
-    // PathPlanner configuration constants
+    // Robot physical parameters
     public static final double ROBOT_MASS_KG = 39.0;
     public static final double ROBOT_MOI = 3.255;
     public static final double WHEEL_COF = 1.48;
-    public static final double MAX_STEER_VELOCITY_RAD_PER_SEC = Units.rotationsToRadians(10);
+    public static final double COG_HEIGHT_METERS = 0.2; // Center of gravity height for traction limits
+
+    // PID constants for path following (LTE = Longitudinal Tracking Error, CTE = Cross Track Error)
+    public static final double PATH_LTE_KP = 5.0;
+    public static final double PATH_CTE_KP = 5.0;
+    public static final double PATH_THETA_KP = 5.0;
+
+    // Threaded controller configuration
+    public static final double THREADED_CONTROLLER_PERIOD_SECONDS = 0.01; // 100Hz
+
+    // Speed deadband thresholds for path following
+    public static final double LINEAR_SPEED_DEADBAND = 0.01;
+    public static final double ANGULAR_SPEED_DEADBAND = 0.01;
+
+    // Default odometry update frequency (Hz)
+    public static final double DEFAULT_ODOMETRY_UPDATE_FREQUENCY = 250.0;
 }

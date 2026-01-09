@@ -17,10 +17,13 @@ public final class FieldConstants {
 
     // Hub is in the center of the field
     // Upper hub opening height is approximately 8ft 8in (2.64m) from floor
-    public static final double HUB_HEIGHT = Units.inchesToMeters(104.0);
+    public static final double HUB_HEIGHT = Units.inchesToMeters(31.0); // 104 in
 
     /** Hub target position (center of the field, at the upper hub opening height). */
-    public static final Translation3d HUB = new Translation3d(FIELD_LENGTH / 2.0, FIELD_WIDTH / 2.0, HUB_HEIGHT);
+    public static final Translation3d HUB = new Translation3d(
+            Units.feetToMeters(10),
+            Units.feetToMeters(3),
+            HUB_HEIGHT); // FIELD_LENGTH / 2.0, FIELD_WIDTH / 2.0, HUB_HEIGHT
 
     /** Hub pose for aiming (2D projection at field center). */
     public static final Pose2d HUB_POSE = new Pose2d(HUB.toTranslation2d(), new Rotation2d());

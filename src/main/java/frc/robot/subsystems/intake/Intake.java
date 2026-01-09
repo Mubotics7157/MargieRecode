@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.superstructure.SuperstructureConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class Intake extends SubsystemBase {
@@ -36,7 +37,7 @@ public class Intake extends SubsystemBase {
         // Create arm ligament (name, length in meters, angle in degrees, line width, color)
         armLigament = root.append(new MechanismLigament2d(
                 "Arm",
-                0.5, // 0.5 meter arm length
+                IntakeConstants.Mechanism.ARM_LENGTH,
                 Math.toDegrees(IntakeConstants.ARM_STOWED_POSITION),
                 6,
                 new Color8Bit(Color.kOrange)));
@@ -134,10 +135,10 @@ public class Intake extends SubsystemBase {
         double armError = Math.abs(inputs.armPosition - IntakeConstants.ARM_STOWED_POSITION);
         double deployedError = Math.abs(inputs.armPosition - IntakeConstants.ARM_DEPLOYED_POSITION);
 
-        if (armError < 0.5) {
+        if (armError < IntakeConstants.Mechanism.ARM_POSITION_TOLERANCE) {
             // At stowed position - blue
             armLigament.setColor(new Color8Bit(Color.kBlue));
-        } else if (deployedError < 0.5) {
+        } else if (deployedError < IntakeConstants.Mechanism.ARM_POSITION_TOLERANCE) {
             // At deployed position - green
             armLigament.setColor(new Color8Bit(Color.kGreen));
         } else {
@@ -266,6 +267,6 @@ public class Intake extends SubsystemBase {
 
     // Feed ball to shooter
     public void feedToShooter() {
-        io.setIndexerDutyCycle(0.8); // High power to feed
+        io.setIndexerDutyCycle(SuperstructureConstants.FEED_TO_SHOOTER_DUTY_CYCLE);
     }
 }

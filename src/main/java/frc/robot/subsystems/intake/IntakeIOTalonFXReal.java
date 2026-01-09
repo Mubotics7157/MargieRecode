@@ -43,9 +43,9 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
     public IntakeIOTalonFXReal() {
         // Initialize hardware
-        rollerMotor = new TalonFX(IntakeConstants.ROLLER_MOTOR_ID, "swerve");
-        armMotor = new TalonFX(IntakeConstants.ARM_MOTOR_ID, "swerve");
-        indexerMotor = new TalonFX(IntakeConstants.INDEXER_MOTOR_ID, "swerve");
+        rollerMotor = new TalonFX(IntakeConstants.ROLLER_MOTOR_ID, IntakeConstants.CAN_BUS);
+        armMotor = new TalonFX(IntakeConstants.ARM_MOTOR_ID, IntakeConstants.CAN_BUS);
+        indexerMotor = new TalonFX(IntakeConstants.INDEXER_MOTOR_ID, IntakeConstants.CAN_BUS);
 
         // Configure roller motor
         var rollerConfig = new TalonFXConfiguration();
@@ -53,7 +53,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         // Current limits for roller
-        rollerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ROLLER_CURRENT_LIMIT;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ROLLER_STATOR_CURRENT_LIMIT;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerConfig, 0.25));
@@ -64,7 +64,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         indexerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         // Current limits for indexer
-        indexerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.INDEXER_CURRENT_LIMIT;
+        indexerConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.INDEXER_STATOR_CURRENT_LIMIT;
         indexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         tryUntilOk(5, () -> indexerMotor.getConfigurator().apply(indexerConfig, 0.25));
@@ -75,7 +75,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
         armConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // Current limits for arm
-        armConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ARM_CURRENT_LIMIT;
+        armConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ARM_STATOR_CURRENT_LIMIT;
         armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         // PID for arm position control
@@ -109,7 +109,7 @@ public class IntakeIOTalonFXReal implements IntakeIO {
 
         // Configure update frequencies
         BaseStatusSignal.setUpdateFrequencyForAll(
-                50.0,
+                IntakeConstants.STATUS_SIGNAL_UPDATE_FREQUENCY,
                 rollerPosition,
                 rollerVelocity,
                 rollerAppliedVolts,

@@ -226,7 +226,7 @@ public class Shooter extends SubsystemBase {
             return false;
         }
         double error = Math.abs(inputs.velocityRPM - targetFlywheelRPM);
-        return error < 100; // Within 100 RPM
+        return error < ShooterConstants.FLYWHEEL_TOLERANCE_RPM;
     }
 
     public double getFlywheelRPM() {
@@ -261,11 +261,11 @@ public class Shooter extends SubsystemBase {
 
     // Pooper control
     public void ejectBall() {
-        io.setPooperVelocity(50.0); // ~3000 RPM
+        io.setPooperVelocity(ShooterConstants.POOPER_FEED_VELOCITY);
     }
 
     public void feedBall() {
-        io.setPooperVelocity(50.0); // ~3000 RPM
+        io.setPooperVelocity(ShooterConstants.POOPER_FEED_VELOCITY);
     }
 
     public void stopPooper() {
