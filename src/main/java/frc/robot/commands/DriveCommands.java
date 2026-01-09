@@ -16,14 +16,12 @@ package frc.robot.commands;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,15 +38,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
     private static final double DEADBAND = 0.01;
-    private static final double ANGLE_KP = 5.0;
-    private static final double ANGLE_KD = 0.4;
-    private static final double ANGLE_MAX_VELOCITY = 8.0;
-    private static final double ANGLE_MAX_ACCELERATION = 20.0;
     private static final double FF_START_DELAY = 2.0; // Secs
     private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
@@ -68,71 +61,6 @@ public class DriveCommands {
         return new Pose2d(new Translation2d(), linearDirection)
                 .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
                 .getTranslation();
-    }
-
-    /** Field relative drive command using two joysticks (controlling linear and angular velocities). */
-    public static Command joystickDrive(
-            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
-        return Commands.run(
-                () -> {
-                    // Get linear velocity
-                    Translation2d linearVelocity =
-                            getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
-
-                    // Apply rotation deadband
-                    double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
-
-                    // Square rotation value for more precise control
-                    omega = Math.copySign(omega * omega, omega);
-
-                    // Calculate field-relative velocities
-                    // CTRE's FieldCentric with OperatorPerspective handles alliance flipping
-                    double vx = linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec();
-                    double vy = linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec();
-                    double omegaRadPerSec = omega * drive.getMaxAngularSpeedRadPerSec();
-
-                    // Use CTRE's field-centric request directly - handles all optimization internally
-                    drive.runVelocityFieldCentric(vx, vy, omegaRadPerSec);
-                },
-                drive);
-    }
-
-    /**
-     * Field relative drive command using joystick for linear control and PID for angular control. Possible use cases
-     * include snapping to an angle, aiming at a vision target, or controlling absolute rotation with a joystick.
-     */
-    public static Command joystickDriveAtAngle(
-            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Supplier<Rotation2d> rotationSupplier) {
-
-        // Create PID controller
-        ProfiledPIDController angleController = new ProfiledPIDController(
-                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
-        angleController.enableContinuousInput(-Math.PI, Math.PI);
-
-        // Construct command
-        return Commands.run(
-                        () -> {
-                            // Get linear velocity
-                            Translation2d linearVelocity =
-                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
-
-                            // Calculate angular speed from PID
-                            double omegaRadPerSec = angleController.calculate(
-                                    drive.getRotation().getRadians(),
-                                    rotationSupplier.get().getRadians());
-
-                            // Calculate field-relative velocities
-                            // CTRE's FieldCentric with OperatorPerspective handles alliance flipping
-                            double vx = linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec();
-                            double vy = linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec();
-
-                            // Use CTRE's field-centric request directly
-                            drive.runVelocityFieldCentric(vx, vy, omegaRadPerSec);
-                        },
-                        drive)
-
-                // Reset PID controller when command starts
-                .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
     }
 
     /**
