@@ -72,17 +72,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     Math.hypot(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
                     Math.hypot(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)));
 
-    // PathPlanner config constants
-    private static final double ROBOT_MASS_KG = 39.0;
-    private static final double ROBOT_MOI = 3.255;
-    private static final double WHEEL_COF = 1.48;
-    private static final double COG_HEIGHT_METERS = 0.2; // Center of gravity height for traction limits
-
-    // PID constants for path following (LTE = Longitudinal Tracking Error, CTE = Cross Track Error)
-    private static final double PATH_LTE_KP = 5.0;
-    private static final double PATH_CTE_KP = 5.0;
-    private static final double PATH_THETA_KP = 5.0;
-
     // IO and inputs
     private final DriveIO io;
     private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
@@ -122,7 +111,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
      * paths.
      */
     private class ThreadedPathController implements Consumer<PathPlannerTrajectory>, Runnable {
-        private static final double PERIOD_SECONDS = 0.01; // 100Hz
 
         private final PathFollowingController controller;
         private final Notifier notifier;
@@ -135,7 +123,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
             this.controller = controller;
             this.timer = new Timer();
             this.notifier = new Notifier(this);
-            this.notifier.startPeriodic(PERIOD_SECONDS);
+            this.notifier.startPeriodic(DriveConstants.THREADED_CONTROLLER_PERIOD_SECONDS);
         }
 
         @Override
@@ -163,11 +151,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
             if (DriverStation.isEnabled()) {
                 // Apply deadband
-                if (Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) < 0.05) {
+                if (Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond)
+                        < DriveConstants.LINEAR_SPEED_DEADBAND) {
                     speeds.vxMetersPerSecond = 0.0;
                     speeds.vyMetersPerSecond = 0.0;
                 }
-                if (Math.abs(speeds.omegaRadiansPerSecond) < 0.05) {
+                if (Math.abs(speeds.omegaRadiansPerSecond) < DriveConstants.ANGULAR_SPEED_DEADBAND) {
                     speeds.omegaRadiansPerSecond = 0.0;
                 }
 
@@ -186,21 +175,25 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         ModuleConfig moduleConfig = new ModuleConfig(
                 TunerConstants.FrontLeft.WheelRadius,
                 TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
-                WHEEL_COF,
+                DriveConstants.WHEEL_COF,
                 DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
                 TunerConstants.FrontLeft.SlipCurrent,
                 1);
 
         // Create robot config with COG height for traction-limited trajectory generation
-        RobotConfig robotConfig =
-                new RobotConfig(ROBOT_MASS_KG, ROBOT_MOI, moduleConfig, COG_HEIGHT_METERS, getModuleTranslations());
+        RobotConfig robotConfig = new RobotConfig(
+                DriveConstants.ROBOT_MASS_KG,
+                DriveConstants.ROBOT_MOI,
+                moduleConfig,
+                DriveConstants.COG_HEIGHT_METERS,
+                getModuleTranslations());
 
         // Create path following controller with 3 PID controllers (LTE, CTE, Theta)
         pathController = new PPHolonomicDriveController(
-                new PIDConstants(PATH_LTE_KP, 0.0, 0.0),
-                new PIDConstants(PATH_CTE_KP, 0.0, 0.0),
-                new PIDConstants(PATH_THETA_KP, 0.0, 0.0),
-                0.01); // 100Hz period
+                new PIDConstants(DriveConstants.PATH_LTE_KP, 0.0, 0.0),
+                new PIDConstants(DriveConstants.PATH_CTE_KP, 0.0, 0.0),
+                new PIDConstants(DriveConstants.PATH_THETA_KP, 0.0, 0.0),
+                DriveConstants.THREADED_CONTROLLER_PERIOD_SECONDS);
 
         // Create threaded controller wrapper
         threadedController = new ThreadedPathController(pathController);

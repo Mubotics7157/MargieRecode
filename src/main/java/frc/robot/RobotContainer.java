@@ -95,10 +95,8 @@ public class RobotContainer {
                 intake = new Intake(new IntakeIOTalonFXReal());
                 shooter = new Shooter(new ShooterIOTalonFXReal());
                 superstructure = new Superstructure(intake, shooter, new SuperstructureIOReal() {});
-                led = new Led(new LedIOCANdle(
-                        Constants.LedConstants.kCandleId,
-                        Constants.LedConstants.kCanBus,
-                        Constants.LedConstants.kTotalLedCount));
+                led = new Led(
+                        new LedIOCANdle(LedConstants.CANDLE_ID, LedConstants.CAN_BUS, LedConstants.TOTAL_LED_COUNT));
                 break;
 
             case SIM:

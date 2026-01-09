@@ -1,7 +1,6 @@
 package frc.robot.subsystems.led;
 
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -19,8 +18,6 @@ public class Led extends SubsystemBase {
 
     // Animation state
     private double breathPhase = 0.0;
-    private static final double BREATH_PERIOD = 2.0; // seconds for one full breath cycle
-    private static final double RAINBOW_PERIOD = 5.0; // seconds to cycle through all rainbow colors
 
     public Led(LedIO io) {
         this.io = io;
@@ -61,12 +58,6 @@ public class Led extends SubsystemBase {
             return;
         }
 
-        // Check battery voltage
-        if (RobotController.getBatteryVoltage() < 11.5) {
-            io.setSolidColor(LedState.kLowBattery);
-            return;
-        }
-
         // Check superstructure state
         if (superstructure != null) {
             switch (superstructure.getCurrentGoal()) {
@@ -91,11 +82,9 @@ public class Led extends SubsystemBase {
             }
         }
 
-        // Default state based on mode
-        if (DriverStation.isAutonomous()) {
-            io.setSolidColor(LedState.kAutonomous);
-        } else if (DriverStation.isTeleop()) {
-            io.setSolidColor(LedState.kEnabled);
+        // Default state - traveling rainbow when enabled
+        if (DriverStation.isAutonomous() || DriverStation.isTeleop()) {
+            updateTravelingRainbow();
         } else {
             io.setSolidColor(LedState.kOff);
         }
@@ -105,16 +94,61 @@ public class Led extends SubsystemBase {
         double now = Timer.getFPGATimestamp();
 
         // Calculate breathing brightness using sine wave (0.0 to 1.0)
-        double breathValue = (Math.sin(now * 2 * Math.PI / BREATH_PERIOD) + 1.0) / 2.0;
+        double breathValue = (Math.sin(now * 2 * Math.PI / LedConstants.BREATH_PERIOD) + 1.0) / 2.0;
         // Add minimum brightness so LEDs don't fully turn off
-        double brightness = 0.15 + (breathValue * 0.85);
+        double brightness = LedConstants.BREATH_MIN_BRIGHTNESS + (breathValue * LedConstants.BREATH_BRIGHTNESS_RANGE);
 
         // Calculate rainbow hue position (0.0 to 1.0)
-        double huePosition = (now % RAINBOW_PERIOD) / RAINBOW_PERIOD;
+        double huePosition = (now % LedConstants.RAINBOW_PERIOD) / LedConstants.RAINBOW_PERIOD;
 
         // Convert HSV to RGB (saturation = 1.0, value = brightness)
         LedState color = hsvToRgb(huePosition, 1.0, brightness);
         io.setSolidColor(color);
+    }
+
+    private void updateTravelingRainbow() {
+        double now = Timer.getFPGATimestamp();
+        int stripLength = LedConstants.STRIP_LED_COUNT;
+
+        // Calculate position along strip using triangle wave for bounce effect
+        double cyclePosition = (now % LedConstants.TRAVEL_PERIOD) / LedConstants.TRAVEL_PERIOD;
+        // Triangle wave: 0->1->0 for bounce effect
+        double normalizedPos = cyclePosition < 0.5 ? cyclePosition * 2.0 : 2.0 - (cyclePosition * 2.0);
+
+        // Create pattern array for strip
+        LedState[] pattern = new LedState[LedConstants.TOTAL_LED_COUNT];
+
+        // Calculate the center position of the rainbow band
+        double centerPos = normalizedPos * (stripLength - 1);
+
+        for (int i = 0; i < LedConstants.TOTAL_LED_COUNT; i++) {
+            // Get position relative to start of external strip (skip onboard LEDs)
+            int stripPos = i - LedConstants.CANDLE_ONBOARD_LED_COUNT;
+
+            if (stripPos < 0) {
+                // Onboard LEDs - mirror first strip LED
+                stripPos = 0;
+            } else if (stripPos >= stripLength) {
+                // Second strip - mirror position
+                stripPos = stripPos % stripLength;
+            }
+
+            // Calculate distance from center of rainbow band
+            double distance = Math.abs(stripPos - centerPos);
+
+            if (distance < LedConstants.RAINBOW_BAND_WIDTH) {
+                // Inside rainbow band - calculate hue based on position within band
+                double hue = (stripPos - centerPos + LedConstants.RAINBOW_BAND_WIDTH)
+                        / (LedConstants.RAINBOW_BAND_WIDTH * 2.0);
+                hue = Math.max(0.0, Math.min(1.0, hue));
+                pattern[i] = hsvToRgb(hue, 1.0, 1.0);
+            } else {
+                // Outside rainbow band - off
+                pattern[i] = LedState.kOff;
+            }
+        }
+
+        io.setPattern(pattern);
     }
 
     /** Converts HSV color to RGB LedState. H is 0-1, S is 0-1, V is 0-1. */

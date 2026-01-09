@@ -72,7 +72,7 @@ public class DriveIOCTRE extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> im
     }
 
     public DriveIOCTRE(SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants<?, ?, ?>... modules) {
-        this(drivetrainConstants, 250.0, modules);
+        this(drivetrainConstants, DriveConstants.DEFAULT_ODOMETRY_UPDATE_FREQUENCY, modules);
     }
 
     @Override

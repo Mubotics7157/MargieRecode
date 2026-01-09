@@ -23,15 +23,6 @@ public final class Constants {
     public static final Mode simMode = Mode.SIM;
     public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
 
-    public static final class LedConstants {
-        public static final int kCandleId = 31; // CAN ID for the CANdle
-        public static final String kCanBus = "swerve"; // CAN bus name (empty for default)
-        public static final int kCandleLedCount = 8; // Onboard CANdle LEDs
-        public static final int kStripLedCount = 60; // LEDs per external strip (adjust as needed)
-        public static final int kNumStrips = 2; // Number of LED strips
-        public static final int kTotalLedCount = kCandleLedCount + (kStripLedCount * kNumStrips);
-    }
-
     public static enum Mode {
         /** Running on a real robot. */
         REAL,
