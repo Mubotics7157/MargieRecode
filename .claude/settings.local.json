@@ -22,7 +22,9 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "WebFetch(domain:api.ctr-electronics.com)",
-      "Bash(JAVA_HOME=\"C:/Users/Public/wpilib/2025/jdk\" ./gradlew:*)"
+      "Bash(JAVA_HOME=\"C:/Users/Public/wpilib/2025/jdk\" ./gradlew:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
