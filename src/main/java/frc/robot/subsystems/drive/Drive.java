@@ -76,6 +76,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final DriveIO io;
     private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
 
+    // Skid detection
+    private final SkidDetector skidDetector;
+
     // Alerts
     private final Alert gyroDisconnectedAlert =
             new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
@@ -171,6 +174,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     public Drive(DriveIO io) {
         this.io = io;
 
+        // Initialize skid detector
+        this.skidDetector = new SkidDetector(this::getModuleStates);
+
         // Create module config for PathPlanner
         ModuleConfig moduleConfig = new ModuleConfig(
                 TunerConstants.FrontLeft.WheelRadius,
@@ -230,6 +236,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
         // Log module data
         io.logModules(null);
+
+        // Update skid detection
+        skidDetector.periodic();
 
         // Record odometry to RobotState for pose history and speed tracking
         RobotState.getInstance().recordOdometry(Timer.getFPGATimestamp(), getPose(), getChassisSpeeds());

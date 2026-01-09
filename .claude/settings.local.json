@@ -21,7 +21,8 @@
       "Bash(JAVA_HOME=\"/Users/pmazumder/wpilib/2025/jdk\" grep:*)",
       "Bash(tree:*)",
       "Bash(find:*)",
-      "WebFetch(domain:api.ctr-electronics.com)"
+      "WebFetch(domain:api.ctr-electronics.com)",
+      "Bash(JAVA_HOME=\"C:/Users/Public/wpilib/2025/jdk\" ./gradlew:*)"
     ],
     "deny": [],
     "ask": []
