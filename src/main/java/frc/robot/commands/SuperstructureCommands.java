@@ -85,6 +85,14 @@ public class SuperstructureCommands {
         return Commands.runOnce(shooter::disable).withName("StopShooter");
     }
 
+    public static Command poop(Superstructure superstructure) {
+        return Commands.startEnd(
+                        () -> superstructure.setGoal(Goal.POOPING),
+                        () -> superstructure.setGoal(Goal.IDLE),
+                        superstructure)
+                .withName("Poop");
+    }
+
     /**
      * Aim and shoot command - automatically rotates robot to face hub while shooting. Allows driver to control
      * translation while heading is controlled by the aiming system. Following Team 254's convention for integrated

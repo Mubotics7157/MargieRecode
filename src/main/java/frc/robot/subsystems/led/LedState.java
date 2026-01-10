@@ -22,6 +22,7 @@ public class LedState {
     public static final LedState kHasPiece = kGreen;
     public static final LedState kShooting = kRed;
     public static final LedState kAiming = kPurple;
+    public static final LedState kPooping = kPink;
 
     // Rainbow pattern for idle/celebration
     public static final LedState[] kRainbow = {kRed, kOrange, kYellow, kGreen, kCyan, kBlue, kPurple};

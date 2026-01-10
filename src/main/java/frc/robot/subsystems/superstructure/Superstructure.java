@@ -12,7 +12,8 @@ public class Superstructure extends SubsystemBase {
         IDLE,
         INTAKING,
         SHOOTING,
-        OUTTAKING;
+        OUTTAKING,
+        POOPING;
     }
 
     private final SuperstructureIOInputsAutoLogged inputs = new SuperstructureIOInputsAutoLogged();
@@ -85,6 +86,11 @@ public class Superstructure extends SubsystemBase {
                 intake.deployArm();
                 intake.setRollerDutyCycle(SuperstructureConstants.OUTTAKE_ROLLER_DUTY_CYCLE);
                 intake.setIndexerDutyCycle(SuperstructureConstants.OUTTAKE_INDEXER_DUTY_CYCLE);
+                shooter.runIndexer(SuperstructureConstants.SHOOTER_OUTTAKE_VELOCITY);
+                break;
+            case POOPING:
+                shooter.runIndexer(SuperstructureConstants.SHOOTER_OUTTAKE_VELOCITY);
+                shooter.ejectBall();
                 break;
         }
     }
@@ -127,6 +133,7 @@ public class Superstructure extends SubsystemBase {
                     IntakeConstants.ARM_DEPLOYED_POSITION, SuperstructureConstants.ARM_POSITION_TOLERANCE);
             case SHOOTING -> intake.isArmAtPosition(
                     IntakeConstants.ARM_STOWED_POSITION, SuperstructureConstants.ARM_POSITION_TOLERANCE);
+            case POOPING -> true;
         };
     }
 

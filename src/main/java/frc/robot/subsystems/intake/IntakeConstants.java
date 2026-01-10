@@ -21,7 +21,7 @@ public final class IntakeConstants {
 
     // ==================== Arm Position Constants (radians) ====================
     public static final double ARM_STOWED_POSITION = 0.0;
-    public static final double ARM_DEPLOYED_POSITION = -8.0; // -1.62
+    public static final double ARM_DEPLOYED_POSITION = -3.353; // -8
 
     // ==================== Current Limits (Amps) ====================
     public static final double ROLLER_STATOR_CURRENT_LIMIT = 60.0;

@@ -70,6 +70,9 @@ public class Led extends SubsystemBase {
                 case OUTTAKING:
                     io.setSolidColor(LedState.kOrange);
                     return;
+                case POOPING:
+                    io.setSolidColor(LedState.kPooping);
+                    return;
                 case IDLE:
                 default:
                     break;

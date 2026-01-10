@@ -261,7 +261,7 @@ public class Shooter extends SubsystemBase {
 
     // Pooper control
     public void ejectBall() {
-        io.setPooperVelocity(ShooterConstants.POOPER_FEED_VELOCITY);
+        io.setPooperVelocity(-ShooterConstants.POOPER_FEED_VELOCITY);
     }
 
     public void feedBall() {

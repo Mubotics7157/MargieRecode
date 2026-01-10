@@ -196,6 +196,9 @@ public class RobotContainer {
         // Eject
         controller.rightBumper().whileTrue(SuperstructureCommands.outtake(superstructure)); // right bumper
 
+        // Poop
+        controller.b().whileTrue(SuperstructureCommands.poop(superstructure)); // B button
+
         // Aim and Shoot - automatically rotates robot to face hub while shooting
         DoubleSupplier xInput = () -> -controller.getLeftY();
         DoubleSupplier yInput = () -> -controller.getLeftX();

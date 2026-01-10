@@ -17,6 +17,7 @@ public final class SuperstructureConstants {
 
     // ==================== Shooter Indexer Velocity ====================
     public static final double SHOOTER_INDEXER_VELOCITY = 50.0; // RPS
+    public static final double SHOOTER_OUTTAKE_VELOCITY = -50.0; // RPS
 
     // ==================== Position Tolerances ====================
     public static final double ARM_POSITION_TOLERANCE = 0.1; // radians
